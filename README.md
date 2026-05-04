@@ -2,7 +2,7 @@
 
 A modern, single-file HTML subnet calculator that lets you visually split and join CIDR blocks, with cloud provider IP reservation awareness.
 
-![CIDR Splitter screenshot](https://raw.githubusercontent.com/gillescreteur/CIDRsplitter/main/screenshot.png)
+![CIDR Splitter screenshot](https://raw.githubusercontent.com/snarkbe/CIDRsplitter/main/screenshot.png)
 
 ## Features
 
@@ -32,7 +32,7 @@ Open `index.html` directly in any modern browser — no build step, no server ne
 
 ## Live Demo
 
-> [https://gillescreteur.github.io/CIDRsplitter/](https://gillescreteur.github.io/CIDRsplitter/)
+> [https://snarkbe.github.io/CIDRsplitter/](https://snarkbe.github.io/CIDRsplitter/)
 
 ## Inspiration
 
