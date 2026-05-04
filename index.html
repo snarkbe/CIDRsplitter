@@ -511,6 +511,9 @@
   <div class="export-row">
     <button class="btn-export" onclick="exportCSV()">&#x2B07; Export CSV</button>
     <button class="btn-export" onclick="exportTXT()">&#x2B07; Export TXT</button>
+    <button class="btn-export" onclick="exportAzCLI()">&#x2B07; Export Az CLI</button>
+    <button class="btn-export" onclick="exportAWSCLI()">&#x2B07; Export AWS CLI</button>
+    <button class="btn-export" onclick="exportGCPCLI()">&#x2B07; Export GCP CLI</button>
   </div>
 </div>
 
@@ -997,6 +1000,71 @@ function exportTXT() {
     ...allRows.slice(1).map(r => r.map((v, ci) => pad(v, widths[ci])).join('  '))
   ];
   downloadFile(lines.join('\n'), 'subnets.txt', 'text/plain;charset=utf-8;');
+}
+
+function exportAzCLI() {
+  const lines = [
+    '#!/usr/bin/env bash',
+    '# Azure CLI — create subnets',
+    '# Replace <resource-group> and <vnet-name> before running.',
+    '',
+    ...subnets.map((s, i) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      const name = `subnet-${i + 1}-${intToIp(s.network).replace(/\./g, '-')}-${s.bits}`;
+      return [
+        `az network vnet subnet create \\`,
+        `  --resource-group <resource-group> \\`,
+        `  --vnet-name <vnet-name> \\`,
+        `  --name ${name} \\`,
+        `  --address-prefixes ${cidr}`,
+        '',
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets-az.sh', 'text/plain;charset=utf-8;');
+}
+
+function exportAWSCLI() {
+  const lines = [
+    '#!/usr/bin/env bash',
+    '# AWS CLI — create subnets',
+    '# Replace <vpc-id> and optionally add --availability-zone before running.',
+    '',
+    ...subnets.map((s, i) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      const name = `subnet-${i + 1}-${intToIp(s.network).replace(/\./g, '-')}-${s.bits}`;
+      return [
+        `aws ec2 create-subnet \\`,
+        `  --vpc-id <vpc-id> \\`,
+        `  --cidr-block ${cidr} \\`,
+        `  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=${name}}]'`,
+        '',
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets-aws.sh', 'text/plain;charset=utf-8;');
+}
+
+function exportGCPCLI() {
+  const lines = [
+    '#!/usr/bin/env bash',
+    '# GCP CLI — create subnets',
+    '# Replace <project>, <network-name>, and <region> before running.',
+    '',
+    ...subnets.map((s, i) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      const name = `subnet-${i + 1}-${intToIp(s.network).replace(/\./g, '-')}-${s.bits}`;
+      return [
+        `gcloud compute networks subnets create ${name} \\`,
+        `  --project=<project> \\`,
+        `  --network=<network-name> \\`,
+        `  --region=<region> \\`,
+        `  --range=${cidr}`,
+        '',
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets-gcp.sh', 'text/plain;charset=utf-8;');
 }
 
 function downloadFile(content, filename, type) {
