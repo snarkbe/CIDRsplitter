@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual Subnet Calculator</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --accent2: #48cfad;
+      --accent3: #ff6b6b;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --split-btn: #3b82f6;
+      --join-btn: #10b981;
+      --radius: 10px;
+      --font: 'Inter', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      max-width: 1400px;
+      margin: 0 auto 1.5rem auto;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .field input, .field select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+    }
+
+    .field input[type="number"] { width: 90px; }
+    .field input[type="text"] { width: 175px; }
+
+    .btn {
+      padding: 0.55rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    .columns-row {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .columns-row span {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
+
+    .bookmark-row {
+      margin-top: 1rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .bookmark-row a {
+      color: var(--accent2);
+      text-decoration: none;
+    }
+    .bookmark-row a:hover { text-decoration: underline; }
+
+    /* Table */
+    .table-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    thead {
+      background: var(--surface2);
+    }
+
+    thead th {
+      padding: 0.65rem 0.65rem;
+      text-align: left;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+
+    td {
+      padding: 0.55rem 0.65rem;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    td.network { font-family: monospace; font-size: 0.95rem; color: var(--text); }
+    td.range { font-family: monospace; font-size: 0.85rem; color: var(--text-muted); }
+    td.hosts { font-family: monospace; color: var(--accent2); }
+    td.broadcast { font-family: monospace; font-size: 0.85rem; color: var(--text-muted); }
+
+    .depth-bar {
+      display: inline-block;
+      height: 10px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      min-width: 4px;
+      vertical-align: middle;
+    }
+
+    /* ── Action buttons ─────────────────────────────────── */
+    .btn-split,
+    .btn-join {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.38rem 0.9rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+    .btn-split:hover,
+    .btn-join:hover  { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .btn-split:active,
+    .btn-join:active { transform: translateY(0); box-shadow: none; }
+
+    .btn-split {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(59,130,246,0.3);
+    }
+    .btn-join {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(16,185,129,0.3);
+    }
+    .btn-split[disabled],
+    .btn-join[disabled] {
+      opacity: 0.25;
+      cursor: not-allowed;
+      box-shadow: none;
+      filter: none;
+      transform: none;
+    }
+
+    /* Split column */
+    th.col-split, td.col-split {
+      text-align: center;
+      padding: 0.55rem 0.5rem;
+      white-space: nowrap;
+    }
+
+    /* Shared join cell spanning two sibling rows */
+    td.join-cell {
+      vertical-align: middle;
+      text-align: center;
+      padding: 0.4rem 0.6rem;
+      white-space: nowrap;
+    }
+    td.join-cell[rowspan="2"] {
+      background: rgba(16,185,129,0.06);
+      border-left: 2px solid rgba(16,185,129,0.35);
+      border-right: 2px solid rgba(16,185,129,0.35);
+      position: relative;
+    }
+
+    .btn-copy {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      line-height: 1;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      vertical-align: middle;
+      margin-left: 0.35rem;
+      padding: 0;
+    }
+    .btn-copy:hover { color: var(--accent2); border-color: var(--accent2); background: rgba(72,207,173,0.08); }
+    .btn-copy.copied { color: var(--accent2); border-color: var(--accent2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.18rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-net { background: rgba(108,99,255,0.18); color: var(--accent); }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+
+    .error-msg {
+      color: var(--accent3);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Cloud provider selector */
+    .provider-row {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .provider-row > .row-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .pill {
+      padding: 0.28rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1.5;
+    }
+    .pill:hover { border-color: #8b94a8; color: var(--text); }
+    .pill.active[data-provider="none"]  { background: rgba(139,148,168,0.18); border-color: #8b94a8; color: #c4c9d4; }
+    .pill.active[data-provider="aws"]   { background: rgba(255,153,0,0.15);   border-color: #ff9900; color: #ff9900; }
+    .pill.active[data-provider="azure"] { background: rgba(0,120,212,0.15);   border-color: #0078d4; color: #3ea8ff; }
+    .pill.active[data-provider="gcp"]   { background: rgba(66,133,244,0.15);  border-color: #4285f4; color: #7aabff; }
+
+    .provider-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Reserved IPs */
+    td.hosts-cloud { font-family: monospace; color: #ffb347; }
+
+    .reserved-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: default;
+    }
+
+    .reserved-count {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: monospace;
+      background: rgba(255,107,107,0.18);
+      color: #ff8080;
+      cursor: pointer;
+    }
+    .reserved-count.zero {
+      background: rgba(72,207,173,0.12);
+      color: var(--accent2);
+      cursor: default;
+    }
+
+    /* Reserved tooltip */
+    .reserved-popup {
+      position: fixed;
+      z-index: 9999;
+      background: #16192b;
+      border: 1px solid #3a3f60;
+      border-radius: 9px;
+      padding: 0.8rem 1rem;
+      min-width: 255px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .reserved-popup.visible { opacity: 1; }
+
+    .reserved-popup h4 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.55rem;
+      font-weight: 700;
+    }
+
+    .reserved-popup .rp-table { width: 100%; border-collapse: collapse; }
+    .reserved-popup .rp-table td {
+      padding: 0.22rem 0.25rem;
+      font-family: monospace;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      border: none;
+    }
+    .reserved-popup .rp-table td:first-child { color: #ff9b6b; padding-right: 0.8rem; }
+    .reserved-popup .rp-table td:last-child  { color: var(--text-muted); }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      .input-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Visual Subnet Calculator</h1>
+  <p>Split and join subnets visually. Click a row to divide or merge.</p>
+</header>
+
+<div class="card">
+  <div class="input-row">
+    <div class="field">
+      <label>Network Address</label>
+      <input type="text" id="networkAddr" value="192.168.0.0" placeholder="e.g. 10.0.0.0" />
+    </div>
+    <div class="field">
+      <label>Mask Bits</label>
+      <input type="number" id="maskBits" value="16" min="0" max="32" />
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+      <button class="btn btn-primary" onclick="updateSubnets()">Update</button>
+      <button class="btn btn-secondary" onclick="resetSubnets()">Reset</button>
+    </div>
+  </div>
+  <div id="errorMsg" class="error-msg"></div>
+
+  <div class="provider-row">
+    <span class="row-label">Cloud Provider:</span>
+    <div class="pill-group">
+      <button class="pill active" data-provider="none"  onclick="setProvider('none')">None</button>
+      <button class="pill"        data-provider="aws"   onclick="setProvider('aws')">&#9729; AWS</button>
+      <button class="pill"        data-provider="azure" onclick="setProvider('azure')">&#9729; Azure</button>
+      <button class="pill"        data-provider="gcp"   onclick="setProvider('gcp')">&#9729; GCP</button>
+    </div>
+    <span class="provider-note" id="providerNote"></span>
+  </div>
+
+  <div class="columns-row">
+    <span>Show columns:</span>
+    <label class="toggle-label"><input type="checkbox" id="col_subnet" checked onchange="renderTable()"> Subnet</label>
+    <label class="toggle-label"><input type="checkbox" id="col_range" checked onchange="renderTable()"> Range</label>
+    <label class="toggle-label"><input type="checkbox" id="col_broadcast" checked onchange="renderTable()"> Broadcast</label>
+    <label class="toggle-label"><input type="checkbox" id="col_hosts" checked onchange="renderTable()"> Usable Hosts</label>
+    <label class="toggle-label"><input type="checkbox" id="col_mask" checked onchange="renderTable()"> Subnet Mask</label>
+    <label class="toggle-label"><input type="checkbox" id="col_hex" onchange="renderTable()"> Hex Mask</label>
+    <label class="toggle-label"><input type="checkbox" id="col_size" checked onchange="renderTable()"> Size</label>
+    <label class="toggle-label"><input type="checkbox" id="col_depth" checked onchange="renderTable()"> Depth</label>
+    <label class="toggle-label"><input type="checkbox" id="col_reserved" checked onchange="renderTable()"> Reserved IPs</label>
+  </div>
+
+  <div class="bookmark-row" id="bookmarkRow" style="display:none">
+    <a id="bookmarkLink" href="#">&#128279; Bookmark this subnetting</a>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  <table id="subnetTable">
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<footer>
+  <p>Inspired by <a href="https://www.davidc.net/sites/default/subnets/subnets.html" target="_blank">davidc.net Visual Subnet Calculator</a></p>
+</footer>
+
+<script>
+// ── IP helpers ──────────────────────────────────────────────────────────────
+
+function ipToInt(ip) {
+  const parts = ip.trim().split('.');
+  if (parts.length !== 4) return NaN;
+  let n = 0;
+  for (const p of parts) {
+    const v = parseInt(p, 10);
+    if (isNaN(v) || v < 0 || v > 255) return NaN;
+    n = (n << 8) | v;
+  }
+  return n >>> 0;
+}
+
+function intToIp(n) {
+  n = n >>> 0;
+  return `${(n >>> 24) & 0xff}.${(n >>> 16) & 0xff}.${(n >>> 8) & 0xff}.${n & 0xff}`;
+}
+
+function maskFromBits(bits) {
+  if (bits === 0) return 0;
+  return (0xffffffff << (32 - bits)) >>> 0;
+}
+
+function numHosts(bits) {
+  if (bits >= 31) return Math.max(0, Math.pow(2, 32 - bits) - 0);
+  return Math.pow(2, 32 - bits) - 2;
+}
+
+function blockSize(bits) {
+  return Math.pow(2, 32 - bits);
+}
+
+function maskToHex(bits) {
+  return '0x' + maskFromBits(bits).toString(16).toUpperCase().padStart(8, '0');
+}
+
+// ── Cloud providers ───────────────────────────────────────────────────────────
+
+let selectedCloud = 'none';
+
+const CLOUD_PROVIDERS = {
+  none: {
+    label: 'None',
+    note: '',
+    getReserved: (net, bits) => {
+      if (bits > 30) return [];
+      const size = blockSize(bits);
+      return [
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ];
+    }
+  },
+  aws: {
+    label: 'AWS',
+    note: 'AWS reserves 5 IPs per subnet: .0 (network), .1 (VPC router), .2 (DNS), .3 (future use), last (broadcast)',
+    getReserved: (net, bits) => {
+      const size = blockSize(bits);
+      return dedup([
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + 1) >>> 0,        label: 'VPC router' },
+        { ip: (net + 2) >>> 0,        label: 'DNS server' },
+        { ip: (net + 3) >>> 0,        label: 'Future use (AWS)' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ]);
+    }
+  },
+  azure: {
+    label: 'Azure',
+    note: 'Azure reserves 5 IPs per subnet: .0 (network), .1 (gateway), .2–.3 (Azure DNS mapping), last (broadcast)',
+    getReserved: (net, bits) => {
+      const size = blockSize(bits);
+      return dedup([
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + 1) >>> 0,        label: 'Default gateway' },
+        { ip: (net + 2) >>> 0,        label: 'Azure DNS' },
+        { ip: (net + 3) >>> 0,        label: 'Azure DNS' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ]);
+    }
+  },
+  gcp: {
+    label: 'GCP',
+    note: 'GCP reserves 3 IPs per subnet: .0 (network), .1 (default gateway), last (broadcast)',
+    getReserved: (net, bits) => {
+      const size = blockSize(bits);
+      return dedup([
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + 1) >>> 0,        label: 'Default gateway' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ]);
+    }
+  }
+};
+
+function dedup(list) {
+  const seen = new Set();
+  return list.filter(r => { const k = r.ip; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+function getReserved(net, bits) {
+  return (CLOUD_PROVIDERS[selectedCloud] ?? CLOUD_PROVIDERS.none).getReserved(net, bits);
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+
+// Each subnet: { network: int, bits: int, split: bool }
+// Stored as flat array ordered by network address
+let baseNetwork = 0;
+let baseBits = 16;
+let subnets = [];
+
+function initSubnets(network, bits) {
+  baseNetwork = network;
+  baseBits = bits;
+  subnets = [{ network, bits, split: false }];
+}
+
+function splitSubnet(idx) {
+  const s = subnets[idx];
+  if (s.bits >= 32) return;
+  const newBits = s.bits + 1;
+  const half = blockSize(newBits);
+  const a = { network: s.network, bits: newBits, split: false };
+  const b = { network: (s.network + half) >>> 0, bits: newBits, split: false };
+  subnets.splice(idx, 1, a, b);
+  renderTable();
+  updateBookmark();
+}
+
+function canJoinSubnet(idx) {
+  const s = subnets[idx];
+  if (s.bits <= baseBits) return false;
+  const parentBits = s.bits - 1;
+  const parentNetwork = (s.network & maskFromBits(parentBits)) >>> 0;
+  const directA = parentNetwork >>> 0;
+  const directB = ((parentNetwork + blockSize(s.bits)) >>> 0);
+  const idxA = subnets.findIndex(x => x.network === directA && x.bits === s.bits);
+  const idxB = subnets.findIndex(x => x.network === directB && x.bits === s.bits);
+  return idxA !== -1 && idxB !== -1;
+}
+
+function joinSubnet(idx) {
+  if (!canJoinSubnet(idx)) return;
+  const s = subnets[idx];
+  const parentBits = s.bits - 1;
+  const parentNetwork = (s.network & maskFromBits(parentBits)) >>> 0;
+  const directA = parentNetwork >>> 0;
+  const directB = (parentNetwork + blockSize(s.bits)) >>> 0;
+  const idxA = subnets.findIndex(x => x.network === directA && x.bits === s.bits);
+  const idxB = subnets.findIndex(x => x.network === directB && x.bits === s.bits);
+  const minIdx = Math.min(idxA, idxB);
+  subnets.splice(minIdx, 2, { network: parentNetwork, bits: parentBits, split: false });
+  renderTable();
+  updateBookmark();
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+
+function col(id) { return document.getElementById(id)?.checked ?? true; }
+
+function renderTable() {
+  const thead = document.getElementById('tableHead');
+  const tbody = document.getElementById('tableBody');
+  const hasCloud = selectedCloud !== 'none';
+  const showReserved = col('col_reserved');
+
+  // Pre-compute join state: 'first' | 'second' | 'none'
+  const joinStates = subnets.map((s, i) => {
+    if (!canJoinSubnet(i)) return 'none';
+    const parentNet = (s.network & maskFromBits(s.bits - 1)) >>> 0;
+    return s.network === parentNet ? 'first' : 'second';
+  });
+
+  // Header
+  let ths = '<tr>';
+  if (col('col_subnet'))    ths += '<th>Subnet</th>';
+  if (col('col_range'))     ths += '<th>First Host</th>';
+  if (col('col_range'))     ths += '<th>Last Host</th>';
+  if (col('col_broadcast')) ths += '<th>Broadcast</th>';
+  if (col('col_hosts'))     ths += `<th>${hasCloud ? CLOUD_PROVIDERS[selectedCloud].label + ' Usable' : 'Usable Hosts'}</th>`;
+  if (showReserved)         ths += '<th>Reserved IPs</th>';
+  if (col('col_mask'))      ths += '<th>Subnet Mask</th>';
+  if (col('col_hex'))       ths += '<th>Hex Mask</th>';
+  if (col('col_size'))      ths += '<th>Size</th>';
+  if (col('col_depth'))     ths += '<th>Depth</th>';
+  ths += '<th>Split</th><th>Join</th></tr>';
+  thead.innerHTML = ths;
+
+  // Rows
+  let rows = '';
+  for (let i = 0; i < subnets.length; i++) {
+    const s = subnets[i];
+    const net = s.network;
+    const bits = s.bits;
+    const mask = maskFromBits(bits);
+    const size = blockSize(bits);
+    const first = bits >= 31 ? net : (net + 1) >>> 0;
+    const last  = bits >= 31 ? (net + size - 1) >>> 0 : (net + size - 2) >>> 0;
+    const bcast = (net + size - 1) >>> 0;
+    const hosts = bits >= 31 ? size : size - 2;
+    const depth = bits - baseBits;
+    const depthW = Math.min(200, Math.max(4, (depth / (32 - baseBits)) * 200));
+    const canSplit = bits < 30;
+
+    const reserved = getReserved(net, bits);
+    const cloudHosts = Math.max(0, size - reserved.length);
+
+    let tds = '';
+    if (col('col_subnet')) {
+      const cidr = `${intToIp(net)}/${bits}`;
+      tds += `<td class="network"><span class="badge badge-net">/${bits}</span> ${intToIp(net)}<button class="btn-copy" title="Copy ${cidr}" onclick="copyCidr(this,'${cidr}')">&#x2398;</button></td>`;
+    }
+    if (col('col_range'))
+      tds += `<td class="range">${intToIp(first)}</td>`;
+    if (col('col_range'))
+      tds += `<td class="range">${intToIp(last)}</td>`;
+    if (col('col_broadcast'))
+      tds += `<td class="broadcast">${intToIp(bcast)}</td>`;
+    if (col('col_hosts')) {
+      if (hasCloud) {
+        tds += `<td class="hosts-cloud">${cloudHosts.toLocaleString()}</td>`;
+      } else {
+        tds += `<td class="hosts">${hosts.toLocaleString()}</td>`;
+      }
+    }
+    if (showReserved) {
+      if (reserved.length > 0) {
+        tds += `<td><span class="reserved-trigger"
+          onmouseenter="showReservedTooltip(event,${i})"
+          onmousemove="moveTooltip(event)"
+          onmouseleave="hideReservedTooltip()">
+          <span class="reserved-count">${reserved.length}</span>
+          <span style="font-size:0.65rem;color:var(--text-muted);line-height:1">&#9660;</span>
+        </span></td>`;
+      } else {
+        tds += `<td><span class="reserved-count zero">0</span></td>`;
+      }
+    }
+    if (col('col_mask'))
+      tds += `<td class="range">${intToIp(mask)}</td>`;
+    if (col('col_hex'))
+      tds += `<td class="range">${maskToHex(bits)}</td>`;
+    if (col('col_size'))
+      tds += `<td class="hosts">${size.toLocaleString()}</td>`;
+    if (col('col_depth'))
+      tds += `<td><span class="depth-bar" style="width:${depthW}px" title="Depth ${depth}"></span></td>`;
+
+    // Split column (one per row)
+    tds += canSplit
+      ? `<td class="col-split"><button class="btn-split" onclick="splitSubnet(${i})">&#x2702; Split</button></td>`
+      : `<td class="col-split"><button class="btn-split" disabled>&#x2702; Split</button></td>`;
+
+    // Join column (shared rowspan=2 for sibling pairs)
+    const js = joinStates[i];
+    if (js === 'first') {
+      tds += `<td class="join-cell" rowspan="2"><button class="btn-join" onclick="joinSubnet(${i})">&#x2B60; Join</button></td>`;
+    } else if (js === 'second') {
+      // Cell is covered by the rowspan above — emit nothing
+    } else {
+      tds += `<td class="join-cell"><button class="btn-join" disabled>&#x2B60; Join</button></td>`;
+    }
+
+    rows += `<tr>${tds}</tr>`;
+  }
+  tbody.innerHTML = rows;
+}
+
+// ── Update / Reset ────────────────────────────────────────────────────────────
+
+function updateSubnets() {
+  const addrInput = document.getElementById('networkAddr').value.trim();
+  const bitsInput = parseInt(document.getElementById('maskBits').value, 10);
+  const errEl = document.getElementById('errorMsg');
+  errEl.textContent = '';
+
+  const net = ipToInt(addrInput);
+  if (isNaN(net)) { errEl.textContent = 'Invalid IP address.'; return; }
+  if (isNaN(bitsInput) || bitsInput < 0 || bitsInput > 32) {
+    errEl.textContent = 'Mask bits must be 0–32.'; return;
+  }
+
+  const alignedNet = (net & maskFromBits(bitsInput)) >>> 0;
+  if (alignedNet !== net) {
+    errEl.textContent = `Note: address adjusted to network boundary: ${intToIp(alignedNet)}/${bitsInput}`;
+  }
+
+  initSubnets(alignedNet, bitsInput);
+  document.getElementById('networkAddr').value = intToIp(alignedNet);
+  renderTable();
+  updateBookmark();
+}
+
+function resetSubnets() {
+  document.getElementById('networkAddr').value = '192.168.0.0';
+  document.getElementById('maskBits').value = '16';
+  document.getElementById('errorMsg').textContent = '';
+  initSubnets(ipToInt('192.168.0.0'), 16);
+  renderTable();
+  updateBookmark();
+}
+
+// ── Bookmark ──────────────────────────────────────────────────────────────────
+
+function encodeState() {
+  // Encode each subnet as "network/bits", joined by semicolons, then base64
+  const parts = subnets.map(s => `${intToIp(s.network)}/${s.bits}`);
+  return btoa(parts.join(';'));
+}
+
+function decodeState(encoded) {
+  try {
+    const str = atob(encoded);
+    const parts = str.split(';');
+    return parts.map(p => {
+      const [ip, bits] = p.split('/');
+      return { network: ipToInt(ip), bits: parseInt(bits, 10), split: false };
+    }).filter(s => !isNaN(s.network) && !isNaN(s.bits));
+  } catch { return null; }
+}
+
+function updateBookmark() {
+  const encoded = encodeState();
+  const url = `${location.origin}${location.pathname}?s=${encoded}`;
+  const link = document.getElementById('bookmarkLink');
+  link.href = url;
+  document.getElementById('bookmarkRow').style.display = '';
+}
+
+function loadFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const s = params.get('s');
+  if (!s) return false;
+  const decoded = decodeState(s);
+  if (!decoded || decoded.length === 0) return false;
+
+  // Restore state
+  subnets = decoded;
+
+  // Infer base network: first subnet (lowest network addr)
+  const first = decoded.reduce((a, b) => a.network <= b.network ? a : b);
+  // Base bits = minimum bits value (widest mask)
+  baseBits = decoded.reduce((a, b) => Math.min(a, b.bits), 32);
+  baseNetwork = first.network & maskFromBits(baseBits);
+
+  document.getElementById('networkAddr').value = intToIp(baseNetwork);
+  document.getElementById('maskBits').value = baseBits;
+  return true;
+}
+
+// ── Cloud provider UI & Tooltip ───────────────────────────────────────────────
+
+function setProvider(name) {
+  selectedCloud = name;
+  document.querySelectorAll('.pill[data-provider]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.provider === name);
+  });
+  const note = document.getElementById('providerNote');
+  note.textContent = CLOUD_PROVIDERS[name]?.note ?? '';
+  renderTable();
+}
+
+const _tooltip = document.createElement('div');
+_tooltip.className = 'reserved-popup';
+document.body.appendChild(_tooltip);
+
+function showReservedTooltip(e, idx) {
+  const s = subnets[idx];
+  const reserved = getReserved(s.network, s.bits);
+  const providerLabel = CLOUD_PROVIDERS[selectedCloud]?.label ?? 'Provider';
+  if (!reserved.length) return;
+  const rows = reserved.map(r =>
+    `<tr><td>${intToIp(r.ip)}</td><td>${r.label}</td></tr>`
+  ).join('');
+  _tooltip.innerHTML = `<h4>Reserved by ${providerLabel} (${reserved.length} IPs)</h4>
+    <table class="rp-table"><tbody>${rows}</tbody></table>`;
+  _tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  const pad = 18;
+  const tw = _tooltip.offsetWidth  || 270;
+  const th = _tooltip.offsetHeight || 120;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  if (x + tw > window.innerWidth  - 8) x = e.clientX - tw - pad;
+  if (y + th > window.innerHeight - 8) y = e.clientY - th - pad;
+  _tooltip.style.left = x + 'px';
+  _tooltip.style.top  = y + 'px';
+}
+
+function hideReservedTooltip() {
+  _tooltip.classList.remove('visible');
+}
+
+function copyCidr(btn, cidr) {
+  navigator.clipboard.writeText(cidr).then(() => {
+    btn.classList.add('copied');
+    btn.title = 'Copied!';
+    setTimeout(() => { btn.classList.remove('copied'); btn.title = `Copy ${cidr}`; }, 1500);
+  });
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+document.getElementById('networkAddr').addEventListener('keydown', e => {
+  if (e.key === 'Enter') updateSubnets();
+});
+document.getElementById('maskBits').addEventListener('keydown', e => {
+  if (e.key === 'Enter') updateSubnets();
+});
+
+if (!loadFromUrl()) {
+  initSubnets(ipToInt('192.168.0.0'), 16);
+}
+renderTable();
+updateBookmark();
+</script>
+</body>
+</html>
