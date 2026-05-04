@@ -8,9 +8,9 @@ A modern, single-file HTML subnet calculator that lets you visually split and jo
 
 - **Visual split & join** — click Split to divide any subnet in two; the shared Join button spans both siblings so you can merge them back in one click
 - **Cloud provider modes** — select AWS, Azure, GCP or None to see how many IPs each provider reserves per subnet and why
-  - **AWS** — 5 reserved: network, VPC router (`.1`), DNS (`.2`), future use (`.3`), broadcast
-  - **Azure** — 5 reserved: network, gateway (`.1`), Azure DNS (`.2`–`.3`), broadcast
-  - **GCP** — 3 reserved: network, default gateway (`.1`), broadcast
+  - **AWS** — 5 reserved: network, VPC router (`.1`), DNS (`.2`), future use (`.3`), broadcast — [docs](https://docs.aws.amazon.com/vpc/latest/userguide/subnet-sizing.html#subnet-sizing-ipv4)
+  - **Azure** — 5 reserved: network, gateway (`.1`), Azure DNS (`.2`–`.3`), broadcast — [docs](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq#are-there-any-restrictions-on-using-ip-addresses-within-these-subnets)
+  - **GCP** — 4 reserved: network, default gateway (`.1`), second-to-last (future use), broadcast — [docs](https://docs.cloud.google.com/vpc/docs/subnets#unusable-ip-addresses-in-every-subnet)
 - **Reserved IP tooltip** — hover the red badge in the Reserved IPs column to see every reserved address and its purpose
 - **Cloud-adjusted usable host count** — the Usable Hosts column automatically subtracts cloud-reserved IPs
 - **Copy CIDR** — click the clipboard icon next to any subnet to copy e.g. `10.0.0.0/24` to the clipboard

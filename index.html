@@ -610,12 +610,13 @@ const CLOUD_PROVIDERS = {
   },
   gcp: {
     label: 'GCP',
-    note: 'GCP reserves 3 IPs per subnet: .0 (network), .1 (default gateway), last (broadcast)',
+    note: 'GCP reserves 4 IPs per subnet: .0 (network), .1 (default gateway), second-to-last (future use), last (broadcast)',
     getReserved: (net, bits) => {
       const size = blockSize(bits);
       return dedup([
         { ip: net >>> 0,              label: 'Network address' },
         { ip: (net + 1) >>> 0,        label: 'Default gateway' },
+        { ip: (net + size - 2) >>> 0, label: 'Reserved (future use)' },
         { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
       ]);
     }
