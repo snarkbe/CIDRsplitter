@@ -426,6 +426,30 @@
     .reserved-popup .rp-table td:first-child { color: #ff9b6b; padding-right: 0.8rem; }
     .reserved-popup .rp-table td:last-child  { color: var(--text-muted); }
 
+    .export-row {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.38rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-export:hover { color: var(--text); border-color: #8b94a8; background: #2a2e44; }
+
     @media (max-width: 600px) {
       header h1 { font-size: 1.4rem; }
       .input-row { flex-direction: column; }
@@ -482,6 +506,11 @@
 
   <div class="bookmark-row" id="bookmarkRow" style="display:none">
     <a id="bookmarkLink" href="#">&#128279; Bookmark this subnetting</a>
+  </div>
+
+  <div class="export-row">
+    <button class="btn-export" onclick="exportCSV()">&#x2B07; Export CSV</button>
+    <button class="btn-export" onclick="exportTXT()">&#x2B07; Export TXT</button>
   </div>
 </div>
 
@@ -900,6 +929,84 @@ function copyCidr(btn, cidr) {
     btn.title = 'Copied!';
     setTimeout(() => { btn.classList.remove('copied'); btn.title = `Copy ${cidr}`; }, 1500);
   });
+}
+
+// ── Export ───────────────────────────────────────────────────────────────────
+
+function getTableData() {
+  const hasCloud = selectedCloud !== 'none';
+  const showReserved = col('col_reserved');
+
+  const headers = [];
+  if (col('col_subnet'))    headers.push('Subnet (CIDR)');
+  if (col('col_range'))     headers.push('First Host', 'Last Host');
+  if (col('col_broadcast')) headers.push('Broadcast');
+  if (col('col_hosts'))     headers.push(hasCloud ? CLOUD_PROVIDERS[selectedCloud].label + ' Usable' : 'Usable Hosts');
+  if (showReserved)         headers.push('Reserved IPs');
+  if (col('col_mask'))      headers.push('Subnet Mask');
+  if (col('col_hex'))       headers.push('Hex Mask');
+  if (col('col_size'))      headers.push('Size');
+  if (col('col_depth'))     headers.push('Depth');
+
+  const rows = subnets.map(s => {
+    const net  = s.network;
+    const bits = s.bits;
+    const mask = maskFromBits(bits);
+    const size = blockSize(bits);
+    const first = bits >= 31 ? net : (net + 1) >>> 0;
+    const last  = bits >= 31 ? (net + size - 1) >>> 0 : (net + size - 2) >>> 0;
+    const bcast = (net + size - 1) >>> 0;
+    const hosts = bits >= 31 ? size : size - 2;
+    const depth = bits - baseBits;
+    const reserved  = getReserved(net, bits);
+    const cloudHosts = Math.max(0, size - reserved.length);
+
+    const row = [];
+    if (col('col_subnet'))    row.push(`${intToIp(net)}/${bits}`);
+    if (col('col_range'))     { row.push(intToIp(first)); row.push(intToIp(last)); }
+    if (col('col_broadcast')) row.push(intToIp(bcast));
+    if (col('col_hosts'))     row.push(hasCloud ? cloudHosts : hosts);
+    if (showReserved)         row.push(reserved.length);
+    if (col('col_mask'))      row.push(intToIp(mask));
+    if (col('col_hex'))       row.push(maskToHex(bits));
+    if (col('col_size'))      row.push(size);
+    if (col('col_depth'))     row.push(depth);
+    return row;
+  });
+
+  return { headers, rows };
+}
+
+function exportCSV() {
+  const { headers, rows } = getTableData();
+  const esc = v => { const s = String(v); return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const lines = [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))];
+  downloadFile(lines.join('\r\n'), 'subnets.csv', 'text/csv;charset=utf-8;');
+}
+
+function exportTXT() {
+  const { headers, rows } = getTableData();
+  const allRows = [headers, ...rows.map(r => r.map(String))];
+  const widths = headers.map((_, ci) => Math.max(...allRows.map(r => String(r[ci] ?? '').length)));
+  const pad = (s, w) => String(s).padEnd(w);
+  const sep = widths.map(w => '-'.repeat(w)).join('  ');
+  const lines = [
+    allRows[0].map((h, ci) => pad(h, widths[ci])).join('  '),
+    sep,
+    ...allRows.slice(1).map(r => r.map((v, ci) => pad(v, widths[ci])).join('  '))
+  ];
+  downloadFile(lines.join('\n'), 'subnets.txt', 'text/plain;charset=utf-8;');
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
