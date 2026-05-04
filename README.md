@@ -32,7 +32,7 @@ Open `index.html` directly in any modern browser — no build step, no server ne
 
 ## Live Demo
 
-> [https://snarkbe.github.io/CIDRsplitter/](https://snarkbe.github.io/CIDRsplitter/)
+> [https://gh.reichert.be/CIDRsplitter/](https://gh.reichert.be/CIDRsplitter/)
 
 ## Inspiration
 
