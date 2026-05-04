@@ -469,6 +469,14 @@
     }
     .btn-export:hover { color: var(--text); border-color: #8b94a8; background: #2a2e44; }
 
+    .ico-shell {
+      font-family: monospace;
+      font-size: 0.85em;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      opacity: 0.85;
+    }
+
     @media (max-width: 600px) {
       header h1 { font-size: 1.4rem; }
       .input-row { flex-direction: column; }
@@ -530,9 +538,9 @@
   <div class="export-row">
     <button class="btn-export" onclick="exportCSV()">&#x2B07; Export CSV</button>
     <button class="btn-export" onclick="exportTXT()">&#x2B07; Export TXT</button>
-    <button class="btn-export" onclick="exportAzCLI()">&#x1F4DC; Export Azure CLI</button>
-    <button class="btn-export" onclick="exportAWSCLI()">&#x1F4DC; Export AWS CLI</button>
-    <button class="btn-export" onclick="exportGCPCLI()">&#x1F4DC; Export GCP CLI</button>
+    <button class="btn-export" onclick="exportAzCLI()"><span class="ico-shell">&gt;_</span> Export Azure CLI</button>
+    <button class="btn-export" onclick="exportAWSCLI()"><span class="ico-shell">&gt;_</span> Export AWS CLI</button>
+    <button class="btn-export" onclick="exportGCPCLI()"><span class="ico-shell">&gt;_</span> Export GCP CLI</button>
   </div>
 </div>
 
