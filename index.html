@@ -290,6 +290,33 @@
       transform: none;
     }
 
+    /* Secondary "split to /x" button — lighter, compact */
+    .btn-split-to {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-left: 0.4rem;
+      padding: 0.38rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid var(--split-btn);
+      background: transparent;
+      color: var(--split-btn);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .btn-split-to:hover { background: rgba(59,130,246,0.15); transform: translateY(-1px); }
+    .btn-split-to:active { transform: translateY(0); }
+    .btn-split-to[disabled] {
+      opacity: 0.25;
+      cursor: not-allowed;
+      background: transparent;
+      transform: none;
+    }
+
     /* Split column */
     th.col-split, td.col-split {
       text-align: center;
@@ -821,6 +848,39 @@ function splitSubnet(idx) {
   updateBookmark();
 }
 
+// Divide a subnet into equal /target children in one step
+function splitToPrefix(idx) {
+  const s = subnets[idx];
+  if (s.bits >= 30) return;
+  const input = prompt(
+    `Split ${intToIp(s.network)}/${s.bits} into equal subnets.\nTarget prefix length (${s.bits + 1}–30):`,
+    String(s.bits + 1)
+  );
+  if (input === null) return; // cancelled
+  const target = parseInt(input, 10);
+  if (isNaN(target) || target <= s.bits || target > 30) {
+    alert(`Target prefix must be a whole number between ${s.bits + 1} and 30.`);
+    return;
+  }
+  const count = Math.pow(2, target - s.bits);
+  if (count > 256 && !confirm(`This creates ${count.toLocaleString()} subnets. Continue?`)) return;
+
+  const childSize = blockSize(target);
+  const children = [];
+  for (let k = 0; k < count; k++) {
+    children.push({
+      network: (s.network + k * childSize) >>> 0,
+      bits: target,
+      split: false,
+      name: k === 0 ? (s.name ?? '') : '',  // first child keeps the parent's name, like splitSubnet
+      include: s.include !== false,
+    });
+  }
+  subnets.splice(idx, 1, ...children);
+  renderTable();
+  updateBookmark();
+}
+
 function canJoinSubnet(idx) {
   const s = subnets[idx];
   if (s.bits <= baseBits) return false;
@@ -973,10 +1033,10 @@ function renderTable() {
     if (col('col_depth'))
       tds += `<td><span class="depth-bar" style="width:${depthW}px" title="Depth ${depth}"></span></td>`;
 
-    // Split column (one per row)
+    // Split column (one per row): halve + split-to-prefix
     tds += canSplit
-      ? `<td class="col-split"><button class="btn-split" onclick="splitSubnet(${i})">&#x2702; Split</button></td>`
-      : `<td class="col-split"><button class="btn-split" disabled>&#x2702; Split</button></td>`;
+      ? `<td class="col-split"><button class="btn-split" onclick="splitSubnet(${i})">&#x2702; Split</button><button class="btn-split-to" title="Split into equal smaller subnets" onclick="splitToPrefix(${i})">&#x229F; /x</button></td>`
+      : `<td class="col-split"><button class="btn-split" disabled>&#x2702; Split</button><button class="btn-split-to" disabled>&#x229F; /x</button></td>`;
 
     // Join column (shared rowspan=2 for sibling pairs)
     const js = joinStates[i];

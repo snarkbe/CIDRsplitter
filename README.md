@@ -7,6 +7,7 @@ A modern, single-file HTML subnet calculator that lets you visually split and jo
 ## Features
 
 - **Visual split & join** — click Split to divide any subnet in two; the shared Join button spans both siblings so you can merge them back in one click
+- **Split to a prefix** — divide a block into equal subnets of a chosen prefix (e.g. a `/16` straight into `/24`s) in one step, instead of halving repeatedly
 - **Per-subnet names** — give any subnet an optional name; names follow the first half when you split and carry over when you join. Empty names fall back to an auto-generated label (e.g. `subnet-1-10-0-0-0-24`) in exports
 - **Cloud provider modes** — select AWS, Azure, GCP or None to see how many IPs each provider reserves per subnet and why
   - **AWS** — 5 reserved: network, VPC router (`.1`), DNS (`.2`), future use (`.3`), broadcast — [docs](https://docs.aws.amazon.com/vpc/latest/userguide/subnet-sizing.html#subnet-sizing-ipv4)
@@ -33,7 +34,7 @@ A modern, single-file HTML subnet calculator that lets you visually split and jo
 Open `index.html` directly in any modern browser — no build step, no server needed.
 
 1. Enter a network address and prefix length, then click **Update**
-2. Click **✂ Split** on any row to divide it into two equal halves
+2. Click **✂ Split** on any row to divide it into two equal halves, or **⊟ /x** to divide it into equal subnets of a target prefix in one step
 3. Click **⭠ Join** (shared between two sibling rows) to merge them back
 4. Type an optional **Name** next to any subnet (used in exports; auto-named if left blank)
 5. Select a cloud provider to see reserved IPs, adjusted host counts, and provider export fields
