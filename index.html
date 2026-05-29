@@ -36,8 +36,26 @@
       --text-muted: #8892a4;
       --split-btn: #3b82f6;
       --join-btn: #10b981;
+      --popup-bg: #16192b;
+      --popup-border: #3a3f60;
+      --export-hover: #2a2e44;
       --radius: 10px;
       --font: 'Inter', system-ui, sans-serif;
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f3f5fa;
+      --surface: #ffffff;
+      --surface2: #eef1f8;
+      --border: #d4dae8;
+      --accent: #5b54e0;
+      --accent2: #1c9e80;
+      --accent3: #e0484a;
+      --text: #1d2230;
+      --text-muted: #5d6678;
+      --popup-bg: #ffffff;
+      --popup-border: #d4dae8;
+      --export-hover: #e4e9f4;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -75,7 +93,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.5rem;
-      max-width: 1400px;
+      max-width: min(1800px, calc(100vw - 2rem));
       margin: 0 auto 1.5rem auto;
     }
 
@@ -175,7 +193,7 @@
 
     /* Table */
     .table-wrapper {
-      max-width: 1400px;
+      max-width: min(1800px, calc(100vw - 2rem));
       margin: 0 auto;
       overflow-x: auto;
       border-radius: var(--radius);
@@ -325,6 +343,20 @@
 
     .badge-net { background: rgba(108,99,255,0.18); color: var(--accent); }
 
+    .name-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      padding: 0.3rem 0.5rem;
+      font-size: 0.82rem;
+      width: 120px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .name-input:focus { border-color: var(--accent); }
+    .name-input::placeholder { color: var(--text-muted); opacity: 0.55; font-style: italic; }
+
     footer {
       text-align: center;
       margin-top: 2rem;
@@ -382,6 +414,20 @@
       font-style: italic;
     }
 
+    .provider-fields {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+    .provider-field-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+
     /* Reserved IPs */
     td.hosts-cloud { font-family: monospace; color: #ffb347; }
 
@@ -413,8 +459,8 @@
     .reserved-popup {
       position: fixed;
       z-index: 9999;
-      background: #16192b;
-      border: 1px solid #3a3f60;
+      background: var(--popup-bg);
+      border: 1px solid var(--popup-border);
       border-radius: 9px;
       padding: 0.8rem 1rem;
       min-width: 255px;
@@ -448,6 +494,7 @@
     .export-row {
       margin-top: 1rem;
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
       align-items: center;
     }
@@ -467,7 +514,40 @@
       transition: color 0.15s, border-color 0.15s, background 0.15s;
       white-space: nowrap;
     }
-    .btn-export:hover { color: var(--text); border-color: #8b94a8; background: #2a2e44; }
+    .btn-export:hover { color: var(--text); border-color: #8b94a8; background: var(--export-hover); }
+    .btn-export[disabled] { opacity: 0.4; cursor: not-allowed; }
+    .btn-export[disabled]:hover { color: var(--text-muted); border-color: var(--border); background: var(--surface2); }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 100;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+    th.col-include, td.col-include {
+      text-align: center;
+      padding: 0.55rem 0.45rem;
+      width: 1%;
+    }
+    .col-include input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      vertical-align: middle;
+    }
 
     .ico-shell {
       font-family: monospace;
@@ -484,6 +564,8 @@
   </style>
 </head>
 <body>
+
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">&#9789;</button>
 
 <header>
   <h1>Visual Subnet Calculator</h1>
@@ -518,9 +600,43 @@
     <span class="provider-note" id="providerNote"></span>
   </div>
 
+  <div class="provider-fields" id="providerFields" style="display:none">
+    <div class="provider-field-group" data-provider="aws" style="display:none">
+      <div class="field">
+        <label>VPC ID</label>
+        <input type="text" id="awsVpcId" placeholder="<vpc-id>" oninput="updateBookmark()" />
+      </div>
+    </div>
+    <div class="provider-field-group" data-provider="azure" style="display:none">
+      <div class="field">
+        <label>Resource Group</label>
+        <input type="text" id="azureRG" placeholder="<resource-group>" oninput="updateBookmark()" />
+      </div>
+      <div class="field">
+        <label>VNet Name</label>
+        <input type="text" id="azureVnet" placeholder="<vnet-name>" oninput="updateBookmark()" />
+      </div>
+    </div>
+    <div class="provider-field-group" data-provider="gcp" style="display:none">
+      <div class="field">
+        <label>Project</label>
+        <input type="text" id="gcpProject" placeholder="<project>" oninput="updateBookmark()" />
+      </div>
+      <div class="field">
+        <label>Network Name</label>
+        <input type="text" id="gcpNetwork" placeholder="<network-name>" oninput="updateBookmark()" />
+      </div>
+      <div class="field">
+        <label>Region</label>
+        <input type="text" id="gcpRegion" placeholder="<region>" oninput="updateBookmark()" />
+      </div>
+    </div>
+  </div>
+
   <div class="columns-row">
     <span>Show columns:</span>
     <label class="toggle-label"><input type="checkbox" id="col_subnet" checked onchange="renderTable()"> Subnet</label>
+    <label class="toggle-label"><input type="checkbox" id="col_name" checked onchange="renderTable()"> Name</label>
     <label class="toggle-label"><input type="checkbox" id="col_range" checked onchange="renderTable()"> Range</label>
     <label class="toggle-label"><input type="checkbox" id="col_broadcast" checked onchange="renderTable()"> Broadcast</label>
     <label class="toggle-label"><input type="checkbox" id="col_hosts" checked onchange="renderTable()"> Usable Hosts</label>
@@ -538,9 +654,10 @@
   <div class="export-row">
     <button class="btn-export" onclick="exportCSV()">&#x2B07; Export CSV</button>
     <button class="btn-export" onclick="exportTXT()">&#x2B07; Export TXT</button>
-    <button class="btn-export" onclick="exportAzCLI()"><span class="ico-shell">&gt;_</span> Export Azure CLI</button>
-    <button class="btn-export" onclick="exportAWSCLI()"><span class="ico-shell">&gt;_</span> Export AWS CLI</button>
-    <button class="btn-export" onclick="exportGCPCLI()"><span class="ico-shell">&gt;_</span> Export GCP CLI</button>
+    <button class="btn-export" onclick="exportJSON()">&#x2B07; Export JSON</button>
+    <button class="btn-export" id="exportCliBtn" onclick="exportCLI()" disabled title="Select a cloud provider to enable CLI export"><span class="ico-shell">&gt;_</span> <span id="exportCliLabel">Export to CLI</span></button>
+    <button class="btn-export" id="exportTfBtn" onclick="exportTerraform()" disabled title="Select a cloud provider to enable Terraform export">&#x2387; <span id="exportTfLabel">Export Terraform</span></button>
+    <button class="btn-export" id="exportNativeBtn" onclick="exportNativeIaC()" disabled title="Select Azure or AWS to enable native IaC export">&#x2387; <span id="exportNativeLabel">Export IaC</span></button>
   </div>
 </div>
 
@@ -591,6 +708,22 @@ function blockSize(bits) {
 
 function maskToHex(bits) {
   return '0x' + maskFromBits(bits).toString(16).toUpperCase().padStart(8, '0');
+}
+
+// Auto-generated name used when the user hasn't typed one
+function autoName(s, i) {
+  return `subnet-${i + 1}-${intToIp(s.network).replace(/\./g, '-')}-${s.bits}`;
+}
+
+// User-defined name if present, otherwise the auto-generated one
+function displayName(s, i) {
+  const n = (s.name ?? '').trim();
+  return n !== '' ? n : autoName(s, i);
+}
+
+// Same as displayName but sanitized to characters safe for cloud resource names
+function cliName(s, i) {
+  return displayName(s, i).trim().replace(/[^A-Za-z0-9._-]+/g, '-');
 }
 
 // ── Cloud providers ───────────────────────────────────────────────────────────
@@ -664,7 +797,7 @@ function getReserved(net, bits) {
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-// Each subnet: { network: int, bits: int, split: bool }
+// Each subnet: { network: int, bits: int, split: bool, name: string, include: bool }
 // Stored as flat array ordered by network address
 let baseNetwork = 0;
 let baseBits = 16;
@@ -673,7 +806,7 @@ let subnets = [];
 function initSubnets(network, bits) {
   baseNetwork = network;
   baseBits = bits;
-  subnets = [{ network, bits, split: false }];
+  subnets = [{ network, bits, split: false, name: '', include: true }];
 }
 
 function splitSubnet(idx) {
@@ -681,8 +814,8 @@ function splitSubnet(idx) {
   if (s.bits >= 32) return;
   const newBits = s.bits + 1;
   const half = blockSize(newBits);
-  const a = { network: s.network, bits: newBits, split: false };
-  const b = { network: (s.network + half) >>> 0, bits: newBits, split: false };
+  const a = { network: s.network, bits: newBits, split: false, name: s.name ?? '', include: s.include !== false };
+  const b = { network: (s.network + half) >>> 0, bits: newBits, split: false, name: '', include: s.include !== false };
   subnets.splice(idx, 1, a, b);
   renderTable();
   updateBookmark();
@@ -710,7 +843,33 @@ function joinSubnet(idx) {
   const idxA = subnets.findIndex(x => x.network === directA && x.bits === s.bits);
   const idxB = subnets.findIndex(x => x.network === directB && x.bits === s.bits);
   const minIdx = Math.min(idxA, idxB);
-  subnets.splice(minIdx, 2, { network: parentNetwork, bits: parentBits, split: false });
+  // Keep the first sibling's name; fall back to the second if the first is empty
+  const nameA = (subnets[idxA].name ?? '').trim();
+  const nameB = (subnets[idxB].name ?? '').trim();
+  const mergedName = nameA !== '' ? nameA : nameB;
+  // Include the merged subnet if either sibling was included
+  const mergedInclude = subnets[idxA].include !== false || subnets[idxB].include !== false;
+  subnets.splice(minIdx, 2, { network: parentNetwork, bits: parentBits, split: false, name: mergedName, include: mergedInclude });
+  renderTable();
+  updateBookmark();
+}
+
+function updateName(idx, value) {
+  if (!subnets[idx]) return;
+  subnets[idx].name = value;
+  updateBookmark();
+}
+
+function toggleInclude(idx, checked) {
+  if (!subnets[idx]) return;
+  subnets[idx].include = checked;
+  // Re-render so the header "select all" checkbox reflects the new state
+  renderTable();
+  updateBookmark();
+}
+
+function toggleAllInclude(checked) {
+  subnets.forEach(s => { s.include = checked; });
   renderTable();
   updateBookmark();
 }
@@ -733,8 +892,11 @@ function renderTable() {
   });
 
   // Header
+  const allIncluded = subnets.length > 0 && subnets.every(s => s.include !== false);
   let ths = '<tr>';
+  ths += `<th class="col-include" title="Include in exports"><input type="checkbox" id="includeAll" ${allIncluded ? 'checked' : ''} onchange="toggleAllInclude(this.checked)"></th>`;
   if (col('col_subnet'))    ths += '<th>Subnet</th>';
+  if (col('col_name'))      ths += '<th>Name</th>';
   if (col('col_range'))     ths += '<th>First Host</th>';
   if (col('col_range'))     ths += '<th>Last Host</th>';
   if (col('col_broadcast')) ths += '<th>Broadcast</th>';
@@ -767,9 +929,14 @@ function renderTable() {
     const cloudHosts = Math.max(0, size - reserved.length);
 
     let tds = '';
+    tds += `<td class="col-include"><input type="checkbox" ${s.include !== false ? 'checked' : ''} title="Include in exports" onchange="toggleInclude(${i}, this.checked)"></td>`;
     if (col('col_subnet')) {
       const cidr = `${intToIp(net)}/${bits}`;
       tds += `<td class="network"><span class="badge badge-net">/${bits}</span> ${intToIp(net)}<button class="btn-copy" title="Copy ${cidr}" onclick="copyCidr(this,'${cidr}')">&#x2398;</button></td>`;
+    }
+    if (col('col_name')) {
+      const nameVal = (s.name ?? '').replace(/"/g, '&quot;');
+      tds += `<td><input type="text" class="name-input" value="${nameVal}" placeholder="${autoName(s, i)}" oninput="updateName(${i}, this.value)" /></td>`;
     }
     if (col('col_range'))
       tds += `<td class="range">${intToIp(first)}</td>`;
@@ -863,8 +1030,14 @@ function resetSubnets() {
 // ── Bookmark ──────────────────────────────────────────────────────────────────
 
 function encodeState() {
-  // Encode each subnet as "network/bits", joined by semicolons, then base64
-  const parts = subnets.map(s => `${intToIp(s.network)}/${s.bits}`);
+  // Encode each subnet as "network/bits" (plus "/encodedName" when named),
+  // joined by semicolons, then base64. The name is URI-encoded so it never
+  // contains the '/' or ';' delimiters.
+  const parts = subnets.map(s => {
+    const base = `${intToIp(s.network)}/${s.bits}`;
+    const name = (s.name ?? '').trim();
+    return name !== '' ? `${base}/${encodeURIComponent(name)}` : base;
+  });
   return btoa(parts.join(';'));
 }
 
@@ -873,15 +1046,45 @@ function decodeState(encoded) {
     const str = atob(encoded);
     const parts = str.split(';');
     return parts.map(p => {
-      const [ip, bits] = p.split('/');
-      return { network: ipToInt(ip), bits: parseInt(bits, 10), split: false };
+      const [ip, bits, name] = p.split('/');
+      return {
+        network: ipToInt(ip),
+        bits: parseInt(bits, 10),
+        split: false,
+        name: name ? decodeURIComponent(name) : '',
+        include: true,
+      };
     }).filter(s => !isNaN(s.network) && !isNaN(s.bits));
   } catch { return null; }
 }
 
+// Provider input fields persisted in the bookmark URL
+const PROVIDER_FIELD_IDS = ['azureRG', 'azureVnet', 'awsVpcId', 'gcpProject', 'gcpNetwork', 'gcpRegion'];
+
 function updateBookmark() {
-  const encoded = encodeState();
-  const url = `${location.origin}${location.pathname}?s=${encoded}`;
+  const params = new URLSearchParams();
+  params.set('s', encodeState());
+
+  // Selected provider (omit the default)
+  if (selectedCloud !== 'none') params.set('p', selectedCloud);
+
+  // Excluded subnet indices (omit when everything is included)
+  const excluded = subnets
+    .map((s, i) => (s.include === false ? i : -1))
+    .filter(i => i !== -1);
+  if (excluded.length) params.set('x', excluded.join(','));
+
+  // Provider field values that are filled in, base64 of "id=encodedValue;…"
+  const fieldPairs = PROVIDER_FIELD_IDS
+    .map(id => {
+      const el = document.getElementById(id);
+      const v = el ? el.value.trim() : '';
+      return v !== '' ? `${id}=${encodeURIComponent(v)}` : null;
+    })
+    .filter(Boolean);
+  if (fieldPairs.length) params.set('f', btoa(fieldPairs.join(';')));
+
+  const url = `${location.origin}${location.pathname}?${params.toString()}`;
   const link = document.getElementById('bookmarkLink');
   link.href = url;
   document.getElementById('bookmarkRow').style.display = '';
@@ -905,6 +1108,33 @@ function loadFromUrl() {
 
   document.getElementById('networkAddr').value = intToIp(baseNetwork);
   document.getElementById('maskBits').value = baseBits;
+
+  // Restore excluded subnets (indices into the decoded order)
+  const x = params.get('x');
+  if (x) {
+    x.split(',').forEach(n => {
+      const idx = parseInt(n, 10);
+      if (!isNaN(idx) && subnets[idx]) subnets[idx].include = false;
+    });
+  }
+
+  // Restore provider field values (before setProvider so they survive the UI sync)
+  const f = params.get('f');
+  if (f) {
+    try {
+      atob(f).split(';').forEach(pair => {
+        const eq = pair.indexOf('=');
+        if (eq === -1) return;
+        const el = document.getElementById(pair.slice(0, eq));
+        if (el) el.value = decodeURIComponent(pair.slice(eq + 1));
+      });
+    } catch { /* ignore malformed field data */ }
+  }
+
+  // Restore provider last — setProvider syncs pills, field visibility and export buttons
+  const p = params.get('p');
+  if (p && CLOUD_PROVIDERS[p]) setProvider(p);
+
   return true;
 }
 
@@ -917,7 +1147,65 @@ function setProvider(name) {
   });
   const note = document.getElementById('providerNote');
   note.textContent = CLOUD_PROVIDERS[name]?.note ?? '';
+
+  // Show optional provider-specific fields (RG/VNet, project/network/region, …)
+  const fieldsWrap = document.getElementById('providerFields');
+  let anyShown = false;
+  document.querySelectorAll('.provider-field-group').forEach(group => {
+    const show = group.dataset.provider === name;
+    group.style.display = show ? 'flex' : 'none';
+    if (show) anyShown = true;
+  });
+  fieldsWrap.style.display = anyShown ? 'flex' : 'none';
+
+  // Enable the single CLI export button only when a provider is selected,
+  // and label it with the chosen provider so the syntax is clear.
+  const enabled = name !== 'none';
+  const cliBtn = document.getElementById('exportCliBtn');
+  const cliLabel = document.getElementById('exportCliLabel');
+  cliBtn.disabled = !enabled;
+  cliLabel.textContent = enabled ? `Export ${CLOUD_PROVIDERS[name].label} CLI` : 'Export to CLI';
+  cliBtn.title = enabled
+    ? `Export ${CLOUD_PROVIDERS[name].label} CLI script`
+    : 'Select a cloud provider to enable CLI export';
+
+  // Terraform works for every provider; enable whenever one is selected.
+  const tfBtn = document.getElementById('exportTfBtn');
+  tfBtn.disabled = !enabled;
+  tfBtn.title = enabled
+    ? `Export Terraform (${CLOUD_PROVIDERS[name].label})`
+    : 'Select a cloud provider to enable Terraform export';
+
+  // Native IaC: Bicep for Azure, CloudFormation for AWS; nothing first-class for GCP/none.
+  const nativeBtn = document.getElementById('exportNativeBtn');
+  const nativeLabel = document.getElementById('exportNativeLabel');
+  const nativeFmt = name === 'azure' ? 'Bicep' : name === 'aws' ? 'CloudFormation' : '';
+  nativeBtn.disabled = nativeFmt === '';
+  nativeLabel.textContent = nativeFmt ? `Export ${nativeFmt}` : 'Export IaC';
+  nativeBtn.title = nativeFmt
+    ? `Export ${nativeFmt}`
+    : (name === 'gcp'
+        ? 'No native IaC for GCP — use Terraform'
+        : 'Select Azure or AWS to enable native IaC export');
+
   renderTable();
+  updateBookmark();
+}
+
+// Dispatch to the correct CLI exporter based on the selected provider
+function exportCLI() {
+  switch (selectedCloud) {
+    case 'aws':   return exportAWSCLI();
+    case 'azure': return exportAzCLI();
+    case 'gcp':   return exportGCPCLI();
+  }
+}
+
+// Returns the trimmed value of an input, or the given fallback when empty
+function fieldVal(id, fallback) {
+  const el = document.getElementById(id);
+  const v = el ? el.value.trim() : '';
+  return v !== '' ? v : fallback;
 }
 
 const _tooltip = document.createElement('div');
@@ -964,12 +1252,21 @@ function copyCidr(btn, cidr) {
 
 // ── Export ───────────────────────────────────────────────────────────────────
 
+// Subnets selected for export, paired with their original index (so auto-names
+// stay stable regardless of which rows are excluded).
+function exportSubnets() {
+  return subnets
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => s.include !== false);
+}
+
 function getTableData() {
   const hasCloud = selectedCloud !== 'none';
   const showReserved = col('col_reserved');
 
   const headers = [];
   if (col('col_subnet'))    headers.push('Subnet (CIDR)');
+  if (col('col_name'))      headers.push('Name');
   if (col('col_range'))     headers.push('First Host', 'Last Host');
   if (col('col_broadcast')) headers.push('Broadcast');
   if (col('col_hosts'))     headers.push(hasCloud ? CLOUD_PROVIDERS[selectedCloud].label + ' Usable' : 'Usable Hosts');
@@ -979,7 +1276,7 @@ function getTableData() {
   if (col('col_size'))      headers.push('Size');
   if (col('col_depth'))     headers.push('Depth');
 
-  const rows = subnets.map(s => {
+  const rows = exportSubnets().map(({ s, i }) => {
     const net  = s.network;
     const bits = s.bits;
     const mask = maskFromBits(bits);
@@ -994,6 +1291,7 @@ function getTableData() {
 
     const row = [];
     if (col('col_subnet'))    row.push(`${intToIp(net)}/${bits}`);
+    if (col('col_name'))      row.push(displayName(s, i));
     if (col('col_range'))     { row.push(intToIp(first)); row.push(intToIp(last)); }
     if (col('col_broadcast')) row.push(intToIp(bcast));
     if (col('col_hosts'))     row.push(hasCloud ? cloudHosts : hosts);
@@ -1030,18 +1328,20 @@ function exportTXT() {
 }
 
 function exportAzCLI() {
+  const rg   = fieldVal('azureRG', '<resource-group>');
+  const vnet = fieldVal('azureVnet', '<vnet-name>');
   const lines = [
     '#!/usr/bin/env bash',
     '# Azure CLI — create subnets',
     '# Replace <resource-group> and <vnet-name> before running.',
     '',
-    ...subnets.map((s, i) => {
+    ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
-      const name = `subnet-${i + 1}-${intToIp(s.network).replace(/\./g, '-')}-${s.bits}`;
+      const name = cliName(s, i);
       return [
         `az network vnet subnet create \\`,
-        `  --resource-group <resource-group> \\`,
-        `  --vnet-name <vnet-name> \\`,
+        `  --resource-group ${rg} \\`,
+        `  --vnet-name ${vnet} \\`,
         `  --name ${name} \\`,
         `  --address-prefixes ${cidr}`,
         '',
@@ -1052,17 +1352,18 @@ function exportAzCLI() {
 }
 
 function exportAWSCLI() {
+  const vpcId = fieldVal('awsVpcId', '<vpc-id>');
   const lines = [
     '#!/usr/bin/env bash',
     '# AWS CLI — create subnets',
     '# Replace <vpc-id> and optionally add --availability-zone before running.',
     '',
-    ...subnets.map((s, i) => {
+    ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
-      const name = `subnet-${i + 1}-${intToIp(s.network).replace(/\./g, '-')}-${s.bits}`;
+      const name = cliName(s, i);
       return [
         `aws ec2 create-subnet \\`,
-        `  --vpc-id <vpc-id> \\`,
+        `  --vpc-id ${vpcId} \\`,
         `  --cidr-block ${cidr} \\`,
         `  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=${name}}]'`,
         '',
@@ -1073,25 +1374,201 @@ function exportAWSCLI() {
 }
 
 function exportGCPCLI() {
+  const project = fieldVal('gcpProject', '<project>');
+  const network = fieldVal('gcpNetwork', '<network-name>');
+  const region  = fieldVal('gcpRegion', '<region>');
   const lines = [
     '#!/usr/bin/env bash',
     '# GCP CLI — create subnets',
     '# Replace <project>, <network-name>, and <region> before running.',
     '',
-    ...subnets.map((s, i) => {
+    ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
-      const name = `subnet-${i + 1}-${intToIp(s.network).replace(/\./g, '-')}-${s.bits}`;
+      const name = cliName(s, i);
       return [
         `gcloud compute networks subnets create ${name} \\`,
-        `  --project=<project> \\`,
-        `  --network=<network-name> \\`,
-        `  --region=<region> \\`,
+        `  --project=${project} \\`,
+        `  --network=${network} \\`,
+        `  --region=${region} \\`,
         `  --range=${cidr}`,
         '',
       ].join('\n');
     })
   ];
   downloadFile(lines.join('\n'), 'subnets-gcp.sh', 'text/plain;charset=utf-8;');
+}
+
+// ── Infrastructure-as-Code exports ─────────────────────────────────────────────
+
+// Sanitize a name into a valid Terraform/Bicep identifier (letters, digits,
+// underscores; must not start with a digit).
+function tfLabel(s, i) {
+  let label = displayName(s, i).replace(/[^A-Za-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+  if (label === '' || /^[0-9]/.test(label)) label = 's_' + label;
+  return label;
+}
+
+function exportTerraform() {
+  switch (selectedCloud) {
+    case 'aws':   return exportTfAws();
+    case 'azure': return exportTfAzure();
+    case 'gcp':   return exportTfGcp();
+  }
+}
+
+function exportTfAzure() {
+  const rg   = fieldVal('azureRG', '<resource-group>');
+  const vnet = fieldVal('azureVnet', '<vnet-name>');
+  const lines = [
+    '# Terraform — Azure subnets (azurerm_subnet)',
+    `# resource_group_name / virtual_network_name reference an existing VNet.`,
+    '',
+    ...exportSubnets().map(({ s, i }) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      return [
+        `resource "azurerm_subnet" "${tfLabel(s, i)}" {`,
+        `  name                 = "${cliName(s, i)}"`,
+        `  resource_group_name  = "${rg}"`,
+        `  virtual_network_name = "${vnet}"`,
+        `  address_prefixes     = ["${cidr}"]`,
+        `}`,
+        '',
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets-az.tf', 'text/plain;charset=utf-8;');
+}
+
+function exportTfAws() {
+  const vpcId = fieldVal('awsVpcId', '<vpc-id>');
+  const lines = [
+    '# Terraform — AWS subnets (aws_subnet)',
+    '# vpc_id references an existing VPC. Add availability_zone as needed.',
+    '',
+    ...exportSubnets().map(({ s, i }) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      return [
+        `resource "aws_subnet" "${tfLabel(s, i)}" {`,
+        `  vpc_id     = "${vpcId}"`,
+        `  cidr_block = "${cidr}"`,
+        `  tags = {`,
+        `    Name = "${cliName(s, i)}"`,
+        `  }`,
+        `}`,
+        '',
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets-aws.tf', 'text/plain;charset=utf-8;');
+}
+
+function exportTfGcp() {
+  const project = fieldVal('gcpProject', '<project>');
+  const network = fieldVal('gcpNetwork', '<network-name>');
+  const region  = fieldVal('gcpRegion', '<region>');
+  const lines = [
+    '# Terraform — GCP subnets (google_compute_subnetwork)',
+    '# network references an existing VPC network.',
+    '',
+    ...exportSubnets().map(({ s, i }) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      return [
+        `resource "google_compute_subnetwork" "${tfLabel(s, i)}" {`,
+        `  name          = "${cliName(s, i)}"`,
+        `  project       = "${project}"`,
+        `  network       = "${network}"`,
+        `  region        = "${region}"`,
+        `  ip_cidr_range = "${cidr}"`,
+        `}`,
+        '',
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets-gcp.tf', 'text/plain;charset=utf-8;');
+}
+
+// Native IaC: Bicep for Azure, CloudFormation for AWS
+function exportNativeIaC() {
+  if (selectedCloud === 'azure') return exportBicep();
+  if (selectedCloud === 'aws')   return exportCloudFormation();
+}
+
+function exportBicep() {
+  const vnet = fieldVal('azureVnet', '<vnet-name>');
+  const lines = [
+    '// Bicep — Azure subnets (Microsoft.Network/virtualNetworks/subnets)',
+    '// Deploy at the resource group scope that holds the VNet.',
+    '',
+    `param vnetName string = '${vnet}'`,
+    '',
+    ...exportSubnets().map(({ s, i }) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      return [
+        `resource ${tfLabel(s, i)} 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = {`,
+        `  name: '\${vnetName}/${cliName(s, i)}'`,
+        `  properties: {`,
+        `    addressPrefix: '${cidr}'`,
+        `  }`,
+        `}`,
+        '',
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets.bicep', 'text/plain;charset=utf-8;');
+}
+
+function exportCloudFormation() {
+  const vpcId = fieldVal('awsVpcId', '<vpc-id>');
+  const lines = [
+    'AWSTemplateFormatVersion: "2010-09-09"',
+    'Description: Subnets generated by Visual Subnet Calculator',
+    'Resources:',
+    ...exportSubnets().map(({ s, i }) => {
+      const cidr = `${intToIp(s.network)}/${s.bits}`;
+      // CloudFormation logical IDs must be alphanumeric; strip the rest.
+      const logicalId = tfLabel(s, i).replace(/_/g, '');
+      return [
+        `  ${logicalId || 'Subnet' + (i + 1)}:`,
+        `    Type: AWS::EC2::Subnet`,
+        `    Properties:`,
+        `      VpcId: ${vpcId}`,
+        `      CidrBlock: ${cidr}`,
+        `      Tags:`,
+        `        - Key: Name`,
+        `          Value: ${cliName(s, i)}`,
+      ].join('\n');
+    })
+  ];
+  downloadFile(lines.join('\n'), 'subnets-cfn.yaml', 'text/plain;charset=utf-8;');
+}
+
+function exportJSON() {
+  const data = {
+    provider: selectedCloud,
+    subnets: exportSubnets().map(({ s, i }) => {
+      const net  = s.network;
+      const bits = s.bits;
+      const size = blockSize(bits);
+      const first = bits >= 31 ? net : (net + 1) >>> 0;
+      const last  = bits >= 31 ? (net + size - 1) >>> 0 : (net + size - 2) >>> 0;
+      const bcast = (net + size - 1) >>> 0;
+      const reserved = getReserved(net, bits);
+      const usableHosts = selectedCloud !== 'none'
+        ? Math.max(0, size - reserved.length)
+        : (bits >= 31 ? size : size - 2);
+      return {
+        name: displayName(s, i),
+        cidr: `${intToIp(net)}/${bits}`,
+        network: intToIp(net),
+        bits,
+        firstHost: intToIp(first),
+        lastHost: intToIp(last),
+        broadcast: intToIp(bcast),
+        usableHosts,
+      };
+    }),
+  };
+  downloadFile(JSON.stringify(data, null, 2), 'subnets.json', 'application/json;charset=utf-8;');
 }
 
 function downloadFile(content, filename, type) {
@@ -1104,6 +1581,30 @@ function downloadFile(content, filename, type) {
   document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
 }
+
+// ── Theme ──────────────────────────────────────────────────────────────────────
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const btn = document.getElementById('themeToggle');
+  // Show the icon for the theme you'd switch *to*
+  if (btn) btn.innerHTML = theme === 'light' ? '&#9790;' : '&#9789;';
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem('cidr-theme', next); } catch { /* storage may be blocked */ }
+}
+
+(function initTheme() {
+  let theme;
+  try { theme = localStorage.getItem('cidr-theme'); } catch { theme = null; }
+  if (theme !== 'light' && theme !== 'dark') {
+    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  applyTheme(theme);
+})();
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
