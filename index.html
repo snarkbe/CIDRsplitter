@@ -1022,9 +1022,11 @@ function resetSubnets() {
   document.getElementById('networkAddr').value = '192.168.0.0';
   document.getElementById('maskBits').value = '16';
   document.getElementById('errorMsg').textContent = '';
+  // Clear provider-specific fields so they don't linger after reset
+  PROVIDER_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   initSubnets(ipToInt('192.168.0.0'), 16);
-  renderTable();
-  updateBookmark();
+  // setProvider('none') also re-renders and refreshes the bookmark
+  setProvider('none');
 }
 
 // ── Bookmark ──────────────────────────────────────────────────────────────────
