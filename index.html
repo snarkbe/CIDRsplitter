@@ -3,26 +3,95 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visual Subnet Calculator — CIDR Splitter</title>
+  <title>CIDR Splitter — Visual Subnet Calculator with AWS, Azure & GCP Reserved IPs</title>
 
   <!-- Primary SEO -->
-  <meta name="description" content="Free visual subnet calculator. Split and join IPv4 CIDR blocks interactively with cloud provider IP reservation awareness for AWS, Azure and GCP. Export as CSV, TXT or cloud CLI scripts." />
-  <meta name="keywords" content="subnet calculator, CIDR splitter, IPv4 subnetting, network calculator, AWS subnet, Azure subnet, GCP subnet, CIDR notation, IP address calculator, VPC subnetting" />
+  <meta name="description" content="Free visual subnet calculator. Split and join IPv4 CIDR blocks interactively and see exactly which IPs AWS, Azure or GCP reserve in each subnet. Export to CSV, JSON, Terraform, Bicep, CloudFormation or CLI scripts." />
+  <meta name="keywords" content="subnet calculator, CIDR splitter, IPv4 subnetting, network calculator, AWS subnet calculator, Azure subnet calculator, GCP subnet calculator, CIDR notation, IP address calculator, VPC subnetting, AWS reserved IP addresses, Azure reserved IP addresses, GCP reserved IP addresses, cloud subnet planning" />
   <meta name="author" content="Gilles Reichert" />
   <link rel="canonical" href="https://gh.reichert.be/CIDRsplitter/" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
 
   <!-- Open Graph (Facebook, LinkedIn, …) -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="CIDR Splitter" />
   <meta property="og:url" content="https://gh.reichert.be/CIDRsplitter/" />
-  <meta property="og:title" content="Visual Subnet Calculator — CIDR Splitter" />
-  <meta property="og:description" content="Split and join IPv4 CIDR blocks visually. Cloud-aware (AWS, Azure, GCP) with reserved IP tooltips. Export to CSV, TXT or cloud CLI scripts." />
+  <meta property="og:title" content="CIDR Splitter — Visual Subnet Calculator with AWS, Azure & GCP Reserved IPs" />
+  <meta property="og:description" content="Split and join IPv4 CIDR blocks visually. Cloud-aware (AWS, Azure, GCP) with reserved IP tooltips. Export to CSV, JSON, Terraform, Bicep, CloudFormation or CLI scripts." />
   <meta property="og:image" content="https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/screenshot.png" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Visual Subnet Calculator — CIDR Splitter" />
-  <meta name="twitter:description" content="Split and join IPv4 CIDR blocks visually. Cloud-aware (AWS, Azure, GCP) with reserved IP tooltips. Export to CSV, TXT or cloud CLI scripts." />
+  <meta name="twitter:title" content="CIDR Splitter — Visual Subnet Calculator with AWS, Azure & GCP Reserved IPs" />
+  <meta name="twitter:description" content="Split and join IPv4 CIDR blocks visually. Cloud-aware (AWS, Azure, GCP) with reserved IP tooltips. Export to CSV, JSON, Terraform, Bicep, CloudFormation or CLI scripts." />
   <meta name="twitter:image" content="https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/screenshot.png" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "CIDR Splitter — Visual Subnet Calculator",
+    "url": "https://gh.reichert.be/CIDRsplitter/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (runs in any modern browser)",
+    "browserRequirements": "Requires JavaScript",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Gilles Reichert", "url": "https://www.reichert.be" },
+    "description": "Visually split and join IPv4 CIDR blocks, with per-subnet awareness of exactly which IP addresses AWS, Azure and GCP reserve.",
+    "featureList": [
+      "Visual split and join of IPv4 CIDR blocks",
+      "AWS, Azure and GCP reserved IP detection per subnet",
+      "Cloud-adjusted usable host counts",
+      "Export to CSV, JSON, Terraform, Bicep, CloudFormation and provider CLI scripts",
+      "Shareable, bookmarkable URLs",
+      "Light and dark themes"
+    ],
+    "sameAs": ["https://gh.reichert.be/CIDRsplitter/calculator.html"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How many IP addresses does AWS reserve in each VPC subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AWS reserves 5 IP addresses in every VPC subnet: the network address (.0), the VPC router (.1), the DNS server (.2), a future-use address (.3), and the broadcast address (the last address in the block). A /24 subnet with 256 addresses therefore has 251 usable IPs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many IP addresses does Azure reserve in each subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Azure reserves 5 IP addresses per subnet: the network address, the default gateway (.1), two addresses mapped for Azure DNS (.2 and .3), and the broadcast address (the last address in the block)."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many IP addresses does Google Cloud (GCP) reserve in each subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Google Cloud reserves 4 IP addresses per subnet: the network address, the default gateway (.1), a second-to-last reserved address, and the broadcast address (the last address in the block)."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why do usable host counts differ between AWS, Azure and GCP for the same subnet size?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Each cloud provider reserves a different number of addresses in every subnet for its own networking services, such as the default gateway and DNS. Selecting a provider in this tool automatically adjusts the usable host count and lists exactly which addresses are reserved and why."
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     :root {
       --bg: #0f1117;
@@ -87,6 +156,15 @@
       margin-top: 0.4rem;
       font-size: 0.95rem;
     }
+
+    header .nav-link {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--accent2);
+      text-decoration: none;
+    }
+    header .nav-link:hover { text-decoration: underline; }
 
     .card {
       background: var(--surface);
@@ -584,6 +662,43 @@
       opacity: 0.85;
     }
 
+    .faq-card h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+    }
+    .faq-card details {
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 0;
+    }
+    .faq-card details:first-of-type { border-top: none; padding-top: 0; }
+    .faq-card summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--text);
+      list-style: none;
+    }
+    .faq-card summary::-webkit-details-marker { display: none; }
+    .faq-card summary::before { content: '\25B8\2002'; color: var(--accent); }
+    .faq-card details[open] summary::before { content: '\25BE\2002'; }
+    .faq-card p {
+      margin-top: 0.5rem;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+    .faq-card code {
+      font-family: monospace;
+      background: var(--surface2);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      color: var(--accent2);
+    }
+
     @media (max-width: 600px) {
       header h1 { font-size: 1.4rem; }
       .input-row { flex-direction: column; }
@@ -597,6 +712,7 @@
 <header>
   <h1>Visual Subnet Calculator</h1>
   <p>Split and join subnets visually. Click a row to divide or merge.</p>
+  <a class="nav-link" href="calculator.html">&#128290; Just need one CIDR's details? Try the CIDR Calculator &rarr;</a>
 </header>
 
 <div class="card">
@@ -693,6 +809,26 @@
     <thead id="tableHead"></thead>
     <tbody id="tableBody"></tbody>
   </table>
+</div>
+
+<div class="card faq-card">
+  <h2>Cloud Reserved IP FAQ</h2>
+  <details>
+    <summary>How many IP addresses does AWS reserve in each VPC subnet?</summary>
+    <p>AWS reserves 5 IP addresses in every VPC subnet: the network address (<code>.0</code>), the VPC router (<code>.1</code>), the DNS server (<code>.2</code>), a future-use address (<code>.3</code>), and the broadcast address (the last address in the block). A /24 subnet with 256 addresses therefore has 251 usable IPs.</p>
+  </details>
+  <details>
+    <summary>How many IP addresses does Azure reserve in each subnet?</summary>
+    <p>Azure reserves 5 IP addresses per subnet: the network address, the default gateway (<code>.1</code>), two addresses mapped for Azure DNS (<code>.2</code> and <code>.3</code>), and the broadcast address (the last address in the block).</p>
+  </details>
+  <details>
+    <summary>How many IP addresses does Google Cloud (GCP) reserve in each subnet?</summary>
+    <p>Google Cloud reserves 4 IP addresses per subnet: the network address, the default gateway (<code>.1</code>), a second-to-last reserved address, and the broadcast address (the last address in the block).</p>
+  </details>
+  <details>
+    <summary>Why do usable host counts differ between AWS, Azure and GCP for the same subnet size?</summary>
+    <p>Each cloud provider reserves a different number of addresses in every subnet for its own networking services, such as the default gateway and DNS. Select a provider above and this tool automatically adjusts the usable host count and lists exactly which addresses are reserved and why.</p>
+  </details>
 </div>
 
 <footer>

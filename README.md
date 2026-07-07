@@ -1,6 +1,6 @@
 # CIDR Splitter — Visual Subnet Calculator
 
-A modern, single-file HTML subnet calculator that lets you visually split and join CIDR blocks, with cloud provider IP reservation awareness.
+A modern, single-file HTML subnet calculator that lets you visually split and join CIDR blocks, with cloud provider IP reservation awareness. Includes a companion [CIDR Calculator](#cidr-calculator) page for looking up a single block's details.
 
 ![CIDR Splitter screenshot](https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/screenshot.png)
 
@@ -27,6 +27,7 @@ A modern, single-file HTML subnet calculator that lets you visually split and jo
 - **Bookmarkable state** — the full split tree, subnet names, selected provider, provider fields, and per-row export selection are encoded in the URL; bookmark or share it and the exact setup is restored
 - **Light & dark themes** — toggle with the button in the top-right corner; your choice is remembered and defaults to your OS preference
 - **Toggleable columns** — show/hide: Subnet, Name, First Host, Last Host, Broadcast, Usable Hosts, Reserved IPs, Subnet Mask, Hex Mask, Size, Depth
+- **Cloud Reserved IP FAQ** — a short on-page FAQ answering exactly how many IPs AWS, Azure and GCP reserve per subnet, and why usable host counts differ between them
 - **No dependencies** — pure HTML + CSS + vanilla JavaScript, single file, works offline
 
 ## Usage
@@ -45,9 +46,26 @@ Open `index.html` directly in any modern browser — no build step, no server ne
 10. Toggle light/dark mode with the button in the top-right corner
 11. Bookmark the page URL to save your full layout (splits, names, provider, fields, and selection)
 
+## CIDR Calculator
+
+A companion single-page tool (`calculator.html`), in the same visual style, for looking up one CIDR block's details rather than splitting a tree of subnets — inspired by [cidr.xyz](https://cidr.xyz/).
+
+- **Binary breakdown** — 32 clickable bit cells (grouped into octets) show the IP in binary; click any bit to toggle it. Bits are colored network (accent) vs. host (green) based on the current prefix
+- **Prefix slider** — drag to change the prefix length live, or jump straight to common prefixes (`/8`, `/16`, `/20`, `/24`, `/27`, `/28`, `/30`, `/32`) via quick-select pills
+- **Paste-aware input** — paste a bare IP or a full `x.y.z.a/b` CIDR into the IP field; a pasted CIDR splits itself into address + prefix automatically
+- **Full results grid** — CIDR notation, network/broadcast address, subnet mask, wildcard mask, hex mask, total addresses, usable hosts, first/last host, IP range
+- **Cloud provider awareness** — same AWS/Azure/GCP reserved-IP logic as the splitter, with a live reserved-IP table and cloud-adjusted usable host count
+- **Copy CIDR** / **Share Link** buttons — copy the current CIDR, or copy a URL that restores the exact IP, prefix and provider
+- **Light & dark themes**, cross-linked with the splitter in the page header
+- **Cloud Reserved IP FAQ** — the same reserved-IP FAQ as the splitter, framed around single-block lookups
+
+## Discoverability
+
+Both pages carry per-page SEO metadata (title, description, Open Graph/Twitter cards), an inline SVG favicon, and `WebApplication` + `FAQPage` [JSON-LD](https://schema.org/) structured data — the `FAQPage` markup mirrors the on-page Cloud Reserved IP FAQ so search engines can surface it directly. `robots.txt` and `sitemap.xml` at the repo root list both pages for crawlers.
+
 ## Live Demo
 
-> [https://gh.reichert.be/CIDRsplitter/](https://gh.reichert.be/CIDRsplitter/)
+> [https://gh.reichert.be/CIDRsplitter/](https://gh.reichert.be/CIDRsplitter/) &nbsp;·&nbsp; [https://gh.reichert.be/CIDRsplitter/calculator.html](https://gh.reichert.be/CIDRsplitter/calculator.html)
 
 ## Inspiration
 

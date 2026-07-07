@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIDR Calculator — IP Subnet Lookup with AWS, Azure & GCP Reserved IPs</title>
+
+  <!-- Primary SEO -->
+  <meta name="description" content="Free visual CIDR calculator. Enter an IP or CIDR block and instantly see the netmask, network/broadcast address, usable hosts, and exactly which IPs AWS, Azure or GCP reserve in that subnet." />
+  <meta name="keywords" content="cidr calculator, ip subnet calculator, netmask calculator, cidr notation, ip address calculator, subnet mask calculator, wildcard mask, AWS reserved IP addresses, Azure reserved IP addresses, GCP reserved IP addresses, subnet lookup tool" />
+  <meta name="author" content="Gilles Reichert" />
+  <link rel="canonical" href="https://gh.reichert.be/CIDRsplitter/calculator.html" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
+
+  <!-- Open Graph (Facebook, LinkedIn, …) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="CIDR Splitter" />
+  <meta property="og:url" content="https://gh.reichert.be/CIDRsplitter/calculator.html" />
+  <meta property="og:title" content="CIDR Calculator — IP Subnet Lookup with AWS, Azure & GCP Reserved IPs" />
+  <meta property="og:description" content="Enter an IP or CIDR block and see the netmask, network/broadcast address, usable host range and cloud provider reserved IPs (AWS, Azure, GCP) instantly." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/screenshot.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CIDR Calculator — IP Subnet Lookup with AWS, Azure & GCP Reserved IPs" />
+  <meta name="twitter:description" content="Enter an IP or CIDR block and see the netmask, network/broadcast address, usable host range and cloud provider reserved IPs (AWS, Azure, GCP) instantly." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/screenshot.png" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "CIDR Calculator",
+    "url": "https://gh.reichert.be/CIDRsplitter/calculator.html",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (runs in any modern browser)",
+    "browserRequirements": "Requires JavaScript",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Gilles Reichert", "url": "https://www.reichert.be" },
+    "description": "Look up any IPv4 CIDR block: network and broadcast address, netmask, usable hosts, and exactly which IP addresses AWS, Azure and GCP reserve in that subnet.",
+    "featureList": [
+      "Interactive 32-bit binary breakdown of any IP address",
+      "Paste a bare IP or a full CIDR block and it parses automatically",
+      "AWS, Azure and GCP reserved IP detection with cloud-adjusted usable host count",
+      "Copy CIDR notation and shareable bookmark links",
+      "Light and dark themes"
+    ],
+    "sameAs": ["https://gh.reichert.be/CIDRsplitter/"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How many IP addresses does AWS reserve in each VPC subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AWS reserves 5 IP addresses in every VPC subnet: the network address (.0), the VPC router (.1), the DNS server (.2), a future-use address (.3), and the broadcast address (the last address in the block). A /24 subnet with 256 addresses therefore has 251 usable IPs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many IP addresses does Azure reserve in each subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Azure reserves 5 IP addresses per subnet: the network address, the default gateway (.1), two addresses mapped for Azure DNS (.2 and .3), and the broadcast address (the last address in the block)."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many IP addresses does Google Cloud (GCP) reserve in each subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Google Cloud reserves 4 IP addresses per subnet: the network address, the default gateway (.1), a second-to-last reserved address, and the broadcast address (the last address in the block)."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between total addresses and usable hosts in a CIDR block?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Total addresses is the full size of the block (2^(32-prefix)). Usable hosts subtracts the network and broadcast address (2 addresses) for standard subnets, or subtracts every address a selected cloud provider reserves for its own networking services when AWS, Azure or GCP is selected."
+        }
+      }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --accent2: #48cfad;
+      --accent3: #ff6b6b;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --popup-bg: #16192b;
+      --popup-border: #3a3f60;
+      --export-hover: #2a2e44;
+      --radius: 10px;
+      --font: 'Inter', system-ui, sans-serif;
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f3f5fa;
+      --surface: #ffffff;
+      --surface2: #eef1f8;
+      --border: #d4dae8;
+      --accent: #5b54e0;
+      --accent2: #1c9e80;
+      --accent3: #e0484a;
+      --text: #1d2230;
+      --text-muted: #5d6678;
+      --popup-bg: #ffffff;
+      --popup-border: #d4dae8;
+      --export-hover: #e4e9f4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    header .nav-link {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--accent2);
+      text-decoration: none;
+    }
+    header .nav-link:hover { text-decoration: underline; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      max-width: min(1000px, calc(100vw - 2rem));
+      margin: 0 auto 1.5rem auto;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .field input, .field select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+    }
+
+    .field input[type="number"] { width: 90px; }
+    .field input[type="text"] { width: 230px; }
+
+    .btn {
+      padding: 0.55rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    .error-msg {
+      color: var(--accent3);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    /* Prefix slider */
+    .prefix-row {
+      margin-top: 1.25rem;
+    }
+    .prefix-row .prefix-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .prefix-row .prefix-label span.val {
+      font-family: monospace;
+      font-size: 1rem;
+      color: var(--accent);
+      text-transform: none;
+      letter-spacing: normal;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .pill-row {
+      margin-top: 0.6rem;
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 0.28rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1.5;
+    }
+    .pill:hover { border-color: #8b94a8; color: var(--text); }
+    .pill.active { background: rgba(108,99,255,0.18); border-color: var(--accent); color: var(--accent); }
+
+    /* Cloud provider selector (shared look with splitter) */
+    .provider-row {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .provider-row > .row-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .pill-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .pill.active[data-provider="none"]  { background: rgba(139,148,168,0.18); border-color: #8b94a8; color: #c4c9d4; }
+    .pill.active[data-provider="aws"]   { background: rgba(255,153,0,0.15);   border-color: #ff9900; color: #ff9900; }
+    .pill.active[data-provider="azure"] { background: rgba(0,120,212,0.15);   border-color: #0078d4; color: #3ea8ff; }
+    .pill.active[data-provider="gcp"]   { background: rgba(66,133,244,0.15);  border-color: #4285f4; color: #7aabff; }
+    .provider-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Bit grid */
+    .bits-card {
+      max-width: min(1000px, calc(100vw - 2rem));
+      margin: 0 auto 1.5rem auto;
+    }
+    .bits-card h3, .results-card h3, .reserved-card h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+    }
+    .octet-groups {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1.1rem;
+    }
+    .octet-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .octet-bits {
+      display: flex;
+      gap: 3px;
+    }
+    .bit-cell {
+      width: 26px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.08s;
+    }
+    .bit-cell:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .bit-cell.net {
+      background: rgba(108,99,255,0.18);
+      color: var(--accent);
+      border-color: rgba(108,99,255,0.35);
+    }
+    .bit-cell.host {
+      background: rgba(72,207,173,0.10);
+      color: var(--accent2);
+      border-color: rgba(72,207,173,0.25);
+    }
+    .bit-cell.boundary { border-right: 2px solid var(--accent3); }
+    .octet-decimal {
+      font-family: monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .octet-sep {
+      align-self: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 0 -0.2rem;
+      padding-bottom: 1.6rem;
+    }
+    .bits-legend {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      margin-top: 1rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .bits-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .legend-swatch.net { background: rgba(108,99,255,0.4); border: 1px solid var(--accent); }
+    .legend-swatch.host { background: rgba(72,207,173,0.25); border: 1px solid var(--accent2); }
+
+    /* Results grid */
+    .results-card {
+      max-width: min(1000px, calc(100vw - 2rem));
+      margin: 0 auto 1.5rem auto;
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem 1.5rem;
+    }
+    .result-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0.6rem 0.8rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .result-item .r-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .result-item .r-value {
+      font-family: monospace;
+      font-size: 1rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .result-item.highlight .r-value { color: var(--accent2); }
+
+    .action-row {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.5rem 0.95rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-export:hover { color: var(--text); border-color: #8b94a8; background: var(--export-hover); }
+    .btn-export.copied { color: var(--accent2); border-color: var(--accent2); }
+
+    .bookmark-row {
+      margin-top: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .bookmark-row a {
+      color: var(--accent2);
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .bookmark-row a:hover { text-decoration: underline; }
+
+    /* Reserved IP list */
+    .reserved-card {
+      max-width: min(1000px, calc(100vw - 2rem));
+      margin: 0 auto 1.5rem auto;
+    }
+    .rp-table { width: 100%; border-collapse: collapse; }
+    .rp-table td {
+      padding: 0.4rem 0.5rem;
+      font-family: monospace;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rp-table tr:last-child td { border-bottom: none; }
+    .rp-table td:first-child { color: #ff9b6b; width: 160px; }
+    .rp-table td:last-child { color: var(--text-muted); font-family: var(--font); }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 100;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+    .faq-card {
+      max-width: min(1000px, calc(100vw - 2rem));
+      margin: 0 auto 1.5rem auto;
+    }
+    .faq-card h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+    }
+    .faq-card details {
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 0;
+    }
+    .faq-card details:first-of-type { border-top: none; padding-top: 0; }
+    .faq-card summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--text);
+      list-style: none;
+    }
+    .faq-card summary::-webkit-details-marker { display: none; }
+    .faq-card summary::before { content: '\25B8\2002'; color: var(--accent); }
+    .faq-card details[open] summary::before { content: '\25BE\2002'; }
+    .faq-card p {
+      margin-top: 0.5rem;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+    .faq-card code {
+      font-family: monospace;
+      background: var(--surface2);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      color: var(--accent2);
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      .input-row { flex-direction: column; align-items: stretch; }
+      .field input[type="text"] { width: 100%; }
+      .octet-groups { gap: 0.6rem; }
+      .bit-cell { width: 20px; height: 28px; font-size: 0.7rem; }
+      .octet-sep { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">&#9789;</button>
+
+<header>
+  <h1>CIDR Calculator</h1>
+  <p>Enter an IP or CIDR block and see the full breakdown, bit by bit.</p>
+  <a class="nav-link" href="index.html">&#9986; Need to split or join subnets? Try the CIDR Splitter &rarr;</a>
+</header>
+
+<div class="card">
+  <div class="input-row">
+    <div class="field">
+      <label>IP Address or CIDR</label>
+      <input type="text" id="ipInput" value="192.168.1.0" placeholder="e.g. 10.0.0.0/24" />
+    </div>
+    <div class="field">
+      <label>Prefix Length</label>
+      <input type="number" id="prefixInput" value="24" min="0" max="32" />
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+      <button class="btn btn-primary" onclick="applyInputs()">Update</button>
+      <button class="btn btn-secondary" onclick="resetCalculator()">Reset</button>
+    </div>
+  </div>
+  <div id="errorMsg" class="error-msg"></div>
+  <p class="hint">Paste a full CIDR like <code>10.20.0.0/22</code> into the IP field &mdash; the prefix is picked up automatically.</p>
+
+  <div class="prefix-row">
+    <div class="prefix-label"><span>Prefix Length</span><span class="val">/<span id="prefixVal">24</span></span></div>
+    <input type="range" id="prefixSlider" min="0" max="32" value="24" oninput="onSliderInput(this.value)" />
+    <div class="pill-row" id="quickPrefixes"></div>
+  </div>
+
+  <div class="provider-row">
+    <span class="row-label">Cloud Provider:</span>
+    <div class="pill-group">
+      <button class="pill active" data-provider="none"  onclick="setProvider('none')">None</button>
+      <button class="pill"        data-provider="aws"   onclick="setProvider('aws')">&#9729; AWS</button>
+      <button class="pill"        data-provider="azure" onclick="setProvider('azure')">&#9729; Azure</button>
+      <button class="pill"        data-provider="gcp"   onclick="setProvider('gcp')">&#9729; GCP</button>
+    </div>
+    <span class="provider-note" id="providerNote"></span>
+  </div>
+</div>
+
+<div class="card bits-card">
+  <h3>Binary Breakdown &mdash; click a bit to toggle it</h3>
+  <div class="octet-groups" id="octetGroups"></div>
+  <div class="bits-legend">
+    <span><span class="legend-swatch net"></span> Network bits</span>
+    <span><span class="legend-swatch host"></span> Host bits</span>
+  </div>
+</div>
+
+<div class="card results-card">
+  <h3>Results</h3>
+  <div class="results-grid" id="resultsGrid"></div>
+
+  <div class="action-row">
+    <button class="btn-export" id="copyCidrBtn" onclick="copyCidrBtn()">&#x2398; Copy CIDR</button>
+    <button class="btn-export" id="shareLinkBtn" onclick="shareLink()">&#128279; Share Link</button>
+  </div>
+  <div class="bookmark-row" id="bookmarkRow">
+    <a id="bookmarkLink" href="#">&#128279; Direct link to this CIDR</a>
+  </div>
+</div>
+
+<div class="card reserved-card" id="reservedCard" style="display:none">
+  <h3 id="reservedTitle">Reserved IPs</h3>
+  <table class="rp-table" id="reservedTable"><tbody></tbody></table>
+</div>
+
+<div class="card faq-card">
+  <h2>Cloud Reserved IP FAQ</h2>
+  <details>
+    <summary>How many IP addresses does AWS reserve in each VPC subnet?</summary>
+    <p>AWS reserves 5 IP addresses in every VPC subnet: the network address (<code>.0</code>), the VPC router (<code>.1</code>), the DNS server (<code>.2</code>), a future-use address (<code>.3</code>), and the broadcast address (the last address in the block). A /24 subnet with 256 addresses therefore has 251 usable IPs.</p>
+  </details>
+  <details>
+    <summary>How many IP addresses does Azure reserve in each subnet?</summary>
+    <p>Azure reserves 5 IP addresses per subnet: the network address, the default gateway (<code>.1</code>), two addresses mapped for Azure DNS (<code>.2</code> and <code>.3</code>), and the broadcast address (the last address in the block).</p>
+  </details>
+  <details>
+    <summary>How many IP addresses does Google Cloud (GCP) reserve in each subnet?</summary>
+    <p>Google Cloud reserves 4 IP addresses per subnet: the network address, the default gateway (<code>.1</code>), a second-to-last reserved address, and the broadcast address (the last address in the block).</p>
+  </details>
+  <details>
+    <summary>What is the difference between total addresses and usable hosts?</summary>
+    <p>Total addresses is the full size of the block (2<sup>32-prefix</sup>). Usable hosts subtracts the network and broadcast address for standard subnets, or subtracts every address a selected cloud provider reserves for its own networking services when AWS, Azure or GCP is selected above.</p>
+  </details>
+</div>
+
+<footer>
+  <p>Inspired by <a href="https://cidr.xyz/" target="_blank">cidr.xyz</a> &nbsp;&middot;&nbsp; &copy; 2026 <a href="https://www.reichert.be" target="_blank">Gilles Reichert</a> &nbsp;&middot;&nbsp; <a href="https://github.com/snarkbe/CIDRsplitter" target="_blank">&#x2767; GitHub</a></p>
+</footer>
+
+<script>
+// ── IP helpers ──────────────────────────────────────────────────────────────
+
+function ipToInt(ip) {
+  const parts = ip.trim().split('.');
+  if (parts.length !== 4) return NaN;
+  let n = 0;
+  for (const p of parts) {
+    if (!/^\d{1,3}$/.test(p)) return NaN;
+    const v = parseInt(p, 10);
+    if (isNaN(v) || v < 0 || v > 255) return NaN;
+    n = (n << 8) | v;
+  }
+  return n >>> 0;
+}
+
+function intToIp(n) {
+  n = n >>> 0;
+  return `${(n >>> 24) & 0xff}.${(n >>> 16) & 0xff}.${(n >>> 8) & 0xff}.${n & 0xff}`;
+}
+
+function maskFromBits(bits) {
+  if (bits === 0) return 0;
+  return (0xffffffff << (32 - bits)) >>> 0;
+}
+
+function blockSize(bits) {
+  return Math.pow(2, 32 - bits);
+}
+
+function maskToHex(bits) {
+  return '0x' + maskFromBits(bits).toString(16).toUpperCase().padStart(8, '0');
+}
+
+// ── Cloud providers (reserved IP rules) ──────────────────────────────────────
+
+let selectedCloud = 'none';
+
+const CLOUD_PROVIDERS = {
+  none: {
+    label: 'None',
+    note: '',
+    getReserved: (net, bits) => {
+      if (bits > 30) return [];
+      const size = blockSize(bits);
+      return [
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ];
+    }
+  },
+  aws: {
+    label: 'AWS',
+    note: 'AWS reserves 5 IPs per subnet: .0 (network), .1 (VPC router), .2 (DNS), .3 (future use), last (broadcast)',
+    getReserved: (net, bits) => {
+      const size = blockSize(bits);
+      return dedup([
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + 1) >>> 0,        label: 'VPC router' },
+        { ip: (net + 2) >>> 0,        label: 'DNS server' },
+        { ip: (net + 3) >>> 0,        label: 'Future use (AWS)' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ]);
+    }
+  },
+  azure: {
+    label: 'Azure',
+    note: 'Azure reserves 5 IPs per subnet: .0 (network), .1 (gateway), .2–.3 (Azure DNS mapping), last (broadcast)',
+    getReserved: (net, bits) => {
+      const size = blockSize(bits);
+      return dedup([
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + 1) >>> 0,        label: 'Default gateway' },
+        { ip: (net + 2) >>> 0,        label: 'Azure DNS' },
+        { ip: (net + 3) >>> 0,        label: 'Azure DNS' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ]);
+    }
+  },
+  gcp: {
+    label: 'GCP',
+    note: 'GCP reserves 4 IPs per subnet: .0 (network), .1 (default gateway), second-to-last (future use), last (broadcast)',
+    getReserved: (net, bits) => {
+      const size = blockSize(bits);
+      return dedup([
+        { ip: net >>> 0,              label: 'Network address' },
+        { ip: (net + 1) >>> 0,        label: 'Default gateway' },
+        { ip: (net + size - 2) >>> 0, label: 'Reserved (future use)' },
+        { ip: (net + size - 1) >>> 0, label: 'Broadcast' },
+      ]);
+    }
+  }
+};
+
+function dedup(list) {
+  const seen = new Set();
+  return list.filter(r => { const k = r.ip; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+function getReserved(net, bits) {
+  return (CLOUD_PROVIDERS[selectedCloud] ?? CLOUD_PROVIDERS.none).getReserved(net, bits);
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+
+let ipInt = ipToInt('192.168.1.0');
+let prefixBits = 24;
+
+// ── Paste / typed input parsing ──────────────────────────────────────────────
+
+// Accepts "x.y.z.a" or "x.y.z.a/b" (leading/trailing whitespace tolerated)
+function parseIpOrCidr(raw) {
+  const str = raw.trim();
+  const slash = str.indexOf('/');
+  if (slash === -1) {
+    const ip = ipToInt(str);
+    return isNaN(ip) ? null : { ip, bits: null };
+  }
+  const ipPart = str.slice(0, slash).trim();
+  const bitsPart = str.slice(slash + 1).trim();
+  const ip = ipToInt(ipPart);
+  const bits = parseInt(bitsPart, 10);
+  if (isNaN(ip) || isNaN(bits) || bits < 0 || bits > 32) return null;
+  return { ip, bits };
+}
+
+function applyInputs() {
+  const errEl = document.getElementById('errorMsg');
+  errEl.textContent = '';
+
+  const raw = document.getElementById('ipInput').value;
+  const parsed = parseIpOrCidr(raw);
+  if (!parsed) { errEl.textContent = 'Invalid IP address or CIDR (expected e.g. 10.0.0.0 or 10.0.0.0/24).'; return; }
+
+  let bits = parsed.bits !== null ? parsed.bits : parseInt(document.getElementById('prefixInput').value, 10);
+  if (isNaN(bits) || bits < 0 || bits > 32) { errEl.textContent = 'Prefix length must be 0–32.'; return; }
+
+  ipInt = parsed.ip;
+  prefixBits = bits;
+  syncInputsFromState();
+  renderAll();
+}
+
+// Auto-parse the moment a full CIDR is pasted, so users don't need to click Update
+document.getElementById('ipInput').addEventListener('paste', () => {
+  setTimeout(() => {
+    const parsed = parseIpOrCidr(document.getElementById('ipInput').value);
+    if (parsed) applyInputs();
+  }, 0);
+});
+document.getElementById('ipInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') applyInputs();
+});
+document.getElementById('prefixInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') applyInputs();
+});
+
+function resetCalculator() {
+  document.getElementById('errorMsg').textContent = '';
+  ipInt = ipToInt('192.168.1.0');
+  prefixBits = 24;
+  setProvider('none');
+  syncInputsFromState();
+  renderAll();
+}
+
+function syncInputsFromState() {
+  document.getElementById('ipInput').value = intToIp(ipInt);
+  document.getElementById('prefixInput').value = prefixBits;
+  document.getElementById('prefixSlider').value = prefixBits;
+  document.getElementById('prefixVal').textContent = prefixBits;
+}
+
+// ── Prefix slider & quick pills ───────────────────────────────────────────────
+
+function onSliderInput(value) {
+  prefixBits = parseInt(value, 10);
+  syncInputsFromState();
+  renderAll();
+}
+
+const QUICK_PREFIXES = [8, 16, 20, 24, 27, 28, 30, 32];
+function renderQuickPrefixes() {
+  const wrap = document.getElementById('quickPrefixes');
+  wrap.innerHTML = QUICK_PREFIXES.map(b =>
+    `<button class="pill ${b === prefixBits ? 'active' : ''}" onclick="setPrefix(${b})">/${b}</button>`
+  ).join('');
+}
+
+function setPrefix(bits) {
+  prefixBits = bits;
+  syncInputsFromState();
+  renderAll();
+}
+
+// ── Bit grid ──────────────────────────────────────────────────────────────────
+
+function toggleBit(globalIdx) {
+  const bitPos = 31 - globalIdx; // 0 = LSB
+  ipInt = (ipInt ^ (1 << bitPos)) >>> 0;
+  syncInputsFromState();
+  renderAll();
+}
+
+function renderBitGrid() {
+  const wrap = document.getElementById('octetGroups');
+  const bits = [];
+  for (let i = 31; i >= 0; i--) bits.push((ipInt >>> i) & 1);
+
+  let html = '';
+  for (let octet = 0; octet < 4; octet++) {
+    if (octet > 0) html += '<span class="octet-sep">.</span>';
+    const octetValue = (ipInt >>> (8 * (3 - octet))) & 0xff;
+    let cells = '';
+    for (let b = 0; b < 8; b++) {
+      const globalIdx = octet * 8 + b;
+      const isNet = globalIdx < prefixBits;
+      const isBoundary = globalIdx === prefixBits - 1 && prefixBits > 0;
+      cells += `<div class="bit-cell ${isNet ? 'net' : 'host'} ${isBoundary ? 'boundary' : ''}"
+        title="Bit ${globalIdx + 1} of 32 — click to toggle"
+        onclick="toggleBit(${globalIdx})">${bits[globalIdx]}</div>`;
+    }
+    html += `<div class="octet-group"><div class="octet-bits">${cells}</div><div class="octet-decimal">${octetValue}</div></div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+
+function item(label, value, highlight) {
+  return `<div class="result-item ${highlight ? 'highlight' : ''}"><span class="r-label">${label}</span><span class="r-value">${value}</span></div>`;
+}
+
+function renderResults() {
+  const net = (ipInt & maskFromBits(prefixBits)) >>> 0;
+  const size = blockSize(prefixBits);
+  const bcast = (net + size - 1) >>> 0;
+  const first = prefixBits >= 31 ? net : (net + 1) >>> 0;
+  const last  = prefixBits >= 31 ? bcast : (bcast - 1) >>> 0;
+  const hostsRaw = prefixBits >= 31 ? size : Math.max(0, size - 2);
+  const reserved = getReserved(net, prefixBits);
+  const hasCloud = selectedCloud !== 'none';
+  const usable = hasCloud ? Math.max(0, size - reserved.length) : hostsRaw;
+  const wildcard = (~maskFromBits(prefixBits)) >>> 0;
+
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = [
+    item('CIDR Notation', `${intToIp(net)}/${prefixBits}`, true),
+    item('IP Address', intToIp(ipInt)),
+    item('Network Address', intToIp(net)),
+    item('Broadcast Address', intToIp(bcast)),
+    item('Subnet Mask', intToIp(maskFromBits(prefixBits))),
+    item('Wildcard Mask', intToIp(wildcard)),
+    item('Hex Mask', maskToHex(prefixBits)),
+    item('Total Addresses', size.toLocaleString()),
+    item(hasCloud ? `${CLOUD_PROVIDERS[selectedCloud].label} Usable Hosts` : 'Usable Hosts', usable.toLocaleString(), true),
+    item('First Host', intToIp(first)),
+    item('Last Host', intToIp(last)),
+    item('IP Range', `${intToIp(net)} &ndash; ${intToIp(bcast)}`),
+  ].join('');
+
+  renderReserved(net, prefixBits, reserved);
+}
+
+function renderReserved(net, bits, reserved) {
+  const card = document.getElementById('reservedCard');
+  if (selectedCloud === 'none' || reserved.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+  document.getElementById('reservedTitle').textContent = `Reserved by ${CLOUD_PROVIDERS[selectedCloud].label} (${reserved.length} IPs)`;
+  document.getElementById('reservedTable').querySelector('tbody').innerHTML =
+    reserved.map(r => `<tr><td>${intToIp(r.ip)}</td><td>${r.label}</td></tr>`).join('');
+}
+
+// ── Cloud provider UI ─────────────────────────────────────────────────────────
+
+function setProvider(name) {
+  selectedCloud = name;
+  document.querySelectorAll('.pill[data-provider]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.provider === name);
+  });
+  document.getElementById('providerNote').textContent = CLOUD_PROVIDERS[name]?.note ?? '';
+  renderAll();
+}
+
+// ── Copy CIDR / Share link ────────────────────────────────────────────────────
+
+function currentCidr() {
+  const net = (ipInt & maskFromBits(prefixBits)) >>> 0;
+  return `${intToIp(net)}/${prefixBits}`;
+}
+
+function flashButton(btn, label) {
+  const original = btn.innerHTML;
+  btn.classList.add('copied');
+  btn.innerHTML = `&#x2713; ${label}`;
+  setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1500);
+}
+
+function copyCidrBtn() {
+  const cidr = currentCidr();
+  navigator.clipboard.writeText(cidr).then(() => {
+    flashButton(document.getElementById('copyCidrBtn'), 'Copied!');
+  });
+}
+
+function shareLink() {
+  const url = buildShareUrl();
+  navigator.clipboard.writeText(url).then(() => {
+    flashButton(document.getElementById('shareLinkBtn'), 'Link Copied!');
+  });
+}
+
+function buildShareUrl() {
+  const params = new URLSearchParams();
+  params.set('ip', intToIp(ipInt));
+  params.set('b', String(prefixBits));
+  if (selectedCloud !== 'none') params.set('p', selectedCloud);
+  return `${location.origin}${location.pathname}?${params.toString()}`;
+}
+
+function updateBookmark() {
+  const url = buildShareUrl();
+  document.getElementById('bookmarkLink').href = url;
+}
+
+function loadFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const ipParam = params.get('ip');
+  const bParam = params.get('b');
+  if (!ipParam) return false;
+  const ip = ipToInt(ipParam);
+  const bits = parseInt(bParam, 10);
+  if (isNaN(ip) || isNaN(bits) || bits < 0 || bits > 32) return false;
+  ipInt = ip;
+  prefixBits = bits;
+  const p = params.get('p');
+  if (p && CLOUD_PROVIDERS[p]) {
+    selectedCloud = p;
+    document.querySelectorAll('.pill[data-provider]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.provider === p);
+    });
+    document.getElementById('providerNote').textContent = CLOUD_PROVIDERS[p]?.note ?? '';
+  }
+  return true;
+}
+
+// ── Render orchestration ──────────────────────────────────────────────────────
+
+function renderAll() {
+  renderQuickPrefixes();
+  renderBitGrid();
+  renderResults();
+  updateBookmark();
+}
+
+// ── Theme ──────────────────────────────────────────────────────────────────────
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.innerHTML = theme === 'light' ? '&#9790;' : '&#9789;';
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem('cidr-theme', next); } catch { /* storage may be blocked */ }
+}
+
+(function initTheme() {
+  let theme;
+  try { theme = localStorage.getItem('cidr-theme'); } catch { theme = null; }
+  if (theme !== 'light' && theme !== 'dark') {
+    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  applyTheme(theme);
+})();
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+loadFromUrl();
+syncInputsFromState();
+renderAll();
+</script>
+</body>
+</html>
