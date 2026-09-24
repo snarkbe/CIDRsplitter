@@ -700,7 +700,8 @@
     }
 
     @media (max-width: 600px) {
-      header h1 { font-size: 1.4rem; }
+      /* Keep the title clear of the fixed theme toggle (40px + 1rem inset) */
+      header h1 { font-size: 1.4rem; padding: 0 2.75rem; }
 
       /* Inputs: address full width, then mask + buttons on one row */
       .input-row {
