@@ -433,6 +433,7 @@
       word-break: break-all;
     }
     .result-item.highlight .r-value { color: var(--accent2); }
+    .result-item .r-value .nowrap { white-space: nowrap; }
 
     .action-row {
       margin-top: 1.25rem;
@@ -556,12 +557,38 @@
     }
 
     @media (max-width: 600px) {
-      header h1 { font-size: 1.4rem; }
-      .input-row { flex-direction: column; align-items: stretch; }
-      .field input[type="text"] { width: 100%; }
+      /* Keep the title clear of the fixed theme toggle (40px + 1rem inset) */
+      header h1 { font-size: 1.4rem; padding: 0 2.75rem; }
+
+      /* Inputs: IP full width, then prefix + buttons on one row */
+      .input-row {
+        display: grid;
+        grid-template-columns: 5.5rem minmax(0, 1fr);
+        gap: 0.75rem;
+        align-items: end;
+      }
+      .input-row > .field:first-child { grid-column: 1 / -1; }
+      .field input[type="text"],
+      .field input[type="number"] { width: 100%; box-sizing: border-box; }
+      .input-actions > .btn { flex: 1; }
+
+      /* Pills: even grids instead of ragged wrapping */
+      .pill-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .provider-row > .row-label { width: 100%; }
+      .pill-group { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+      .pill { padding-left: 0.4rem; padding-right: 0.4rem; }
+      .pill { white-space: nowrap; }
+      .input-row .field label { white-space: nowrap; }
+
       .octet-groups { gap: 0.6rem; }
       .bit-cell { width: 20px; height: 28px; font-size: 0.7rem; }
       .octet-sep { display: none; }
+    }
+
+    /* Very narrow phones: buttons get their own row, providers go 2x2 */
+    @media (max-width: 380px) {
+      .input-actions { grid-column: 1 / -1; }
+      .pill-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -585,7 +612,7 @@
       <label>Prefix Length</label>
       <input type="number" id="prefixInput" value="24" min="0" max="32" />
     </div>
-    <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+    <div class="input-actions" style="display:flex;gap:0.5rem;align-items:flex-end;">
       <button class="btn btn-primary" onclick="applyInputs()">Update</button>
       <button class="btn btn-secondary" onclick="resetCalculator()">Reset</button>
     </div>
@@ -920,7 +947,7 @@ function renderResults() {
     item(hasCloud ? `${CLOUD_PROVIDERS[selectedCloud].label} Usable Hosts` : 'Usable Hosts', usable.toLocaleString(), true),
     item('First Host', intToIp(first)),
     item('Last Host', intToIp(last)),
-    item('IP Range', `${intToIp(net)} &ndash; ${intToIp(bcast)}`),
+    item('IP Range', `<span class="nowrap">${intToIp(net)}</span> &ndash; <span class="nowrap">${intToIp(bcast)}</span>`),
   ].join('');
 
   renderReserved(net, prefixBits, reserved);
