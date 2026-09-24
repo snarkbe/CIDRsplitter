@@ -736,6 +736,12 @@
       .export-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .btn-export { justify-content: center; }
     }
+
+    /* Very narrow phones: Update/Reset get their own row, providers go 2x2 */
+    @media (max-width: 380px) {
+      .input-actions { grid-column: 1 / -1; }
+      .pill-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
   </style>
 </head>
 <body>
