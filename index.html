@@ -302,7 +302,7 @@
     /* Table */
     .table-wrapper {
       max-width: min(1800px, calc(100vw - 2rem));
-      margin: 0 auto;
+      margin: 0 auto 1.5rem auto;
       overflow-x: auto;
       border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -1019,7 +1019,7 @@
   </table>
 </div>
 
-<details class="card guide-card" id="azureGuide">
+<details class="card guide-card" id="azureGuide" hidden>
   <summary><h2>Azure subnet sizing guide</h2></summary>
   <p>Minimum and recommended sizes for Azure subnets that host platform services. Sizes include the 5 IPs Azure reserves in every subnet. With <strong>Azure</strong> selected, type one of the required names (<code>GatewaySubnet</code>, <code>AzureBastionSubnet</code>, &hellip;) in the Name column and the splitter checks the subnet&rsquo;s size and flags typos.</p>
   <div class="guide-scroll">
@@ -1731,8 +1731,9 @@ function setProvider(name) {
   });
   fieldsWrap.style.display = anyShown ? 'flex' : 'none';
 
-  // Azure: surface the subnet sizing guide
+  // Azure: show the subnet sizing guide (hidden for other providers)
   document.getElementById('azureGuideLink').style.display = name === 'azure' ? '' : 'none';
+  document.getElementById('azureGuide').hidden = name !== 'azure';
   if (name === 'azure') openAzureGuide();
 
   // Enable the single CLI export button only when a provider is selected,
