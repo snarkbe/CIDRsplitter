@@ -7,7 +7,7 @@
 
   <!-- Primary SEO -->
   <meta name="description" content="Free visual subnet calculator. Split and join IPv4 CIDR blocks interactively and see exactly which IPs AWS, Azure or GCP reserve in each subnet. Export to CSV, JSON, Terraform, Bicep, CloudFormation or CLI scripts." />
-  <meta name="keywords" content="subnet calculator, CIDR splitter, IPv4 subnetting, network calculator, AWS subnet calculator, Azure subnet calculator, GCP subnet calculator, CIDR notation, IP address calculator, VPC subnetting, AWS reserved IP addresses, Azure reserved IP addresses, GCP reserved IP addresses, cloud subnet planning" />
+  <meta name="keywords" content="subnet calculator, CIDR splitter, IPv4 subnetting, network calculator, AWS subnet calculator, Azure subnet calculator, GCP subnet calculator, CIDR notation, IP address calculator, VPC subnetting, AWS reserved IP addresses, Azure reserved IP addresses, GCP reserved IP addresses, cloud subnet planning, Azure subnet sizing, AzureBastionSubnet size, GatewaySubnet size, AzureFirewallSubnet size" />
   <meta name="author" content="Gilles Reichert" />
   <link rel="canonical" href="https://gh.reichert.be/CIDRsplitter/" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
@@ -86,6 +86,22 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Each cloud provider reserves a different number of addresses in every subnet for its own networking services, such as the default gateway and DNS. Selecting a provider in this tool automatically adjusts the usable host count and lists exactly which addresses are reserved and why."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What size should the AzureBastionSubnet be?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The AzureBastionSubnet must be /26 or larger for Azure Bastion deployments created on or after November 2, 2021. A /26 or larger subnet also leaves room for host scaling. The Bastion Developer SKU doesn't need a dedicated subnet."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the minimum size of the Azure GatewaySubnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The smallest GatewaySubnet is /29, but it's only allowed for the Basic VPN Gateway SKU. All other SKUs need /27 or larger, and connecting 16 ExpressRoute circuits requires /26 or larger."
         }
       }
     ]
@@ -474,6 +490,35 @@
       transition: border-color 0.15s;
     }
     .name-input:focus { border-color: var(--accent); }
+
+    /* Azure reserved-name hints shown under the Name input */
+    .name-hints { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem; }
+    .name-hints:empty { display: none; }
+    .name-hint {
+      font-size: 0.7rem;
+      font-weight: 600;
+      line-height: 1.3;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      width: max-content;
+      max-width: 220px;
+      text-decoration: none;
+    }
+    a.name-hint:hover { text-decoration: underline; }
+    .hint-error { background: rgba(248,81,73,0.14);  color: #f85149; }
+    .hint-warn  { background: rgba(255,153,0,0.14);  color: #d48806; }
+    .hint-ok    { background: rgba(72,207,173,0.14); color: var(--accent2); }
+    .hint-info  { background: rgba(108,99,255,0.12); color: var(--text-muted); font-weight: 500; }
+    .hint-fix {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      font-weight: 700;
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: underline;
+    }
     .name-input::placeholder { color: var(--text-muted); opacity: 0.55; font-style: italic; }
 
     footer {
@@ -676,6 +721,91 @@
       opacity: 0.85;
     }
 
+    .guide-link {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .guide-link:hover { text-decoration: underline; }
+
+    .guide-card > summary {
+      cursor: pointer;
+      list-style: none;
+    }
+    .guide-card > summary::-webkit-details-marker { display: none; }
+    .guide-card > summary h2 {
+      display: inline;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .guide-card > summary::before { content: '\25B8\2002'; color: var(--accent); }
+    .guide-card[open] > summary::before { content: '\25BE\2002'; }
+    .guide-card p {
+      margin-top: 0.8rem;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+    .guide-card code {
+      font-family: monospace;
+      background: var(--surface2);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      color: var(--accent2);
+    }
+    .guide-scroll { overflow-x: auto; margin-top: 0.8rem; }
+    .guide-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    .guide-table th {
+      text-align: left;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .guide-table td {
+      padding: 0.55rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      color: var(--text-muted);
+      line-height: 1.45;
+      white-space: normal;
+    }
+    .guide-table td:first-child { white-space: nowrap; }
+    .guide-table td:first-child a { color: var(--text); font-weight: 600; text-decoration: none; }
+    .guide-table td:first-child a:hover { text-decoration: underline; }
+    .guide-table td.size { font-family: monospace; white-space: nowrap; color: var(--text); }
+    .guide-table .rec {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--accent2);
+      background: rgba(72,207,173,0.12);
+      padding: 0.05rem 0.4rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .guide-table .reserved-tag {
+      display: inline-block;
+      margin-left: 0.35rem;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 0 0.3rem;
+      vertical-align: middle;
+    }
+    .guide-table tr:target td { background: rgba(108,99,255,0.1); }
+
     .faq-card h2 {
       font-size: 0.78rem;
       text-transform: uppercase;
@@ -716,6 +846,21 @@
     @media (max-width: 600px) {
       /* Keep the title clear of the fixed theme toggle (40px + 1rem inset) */
       header h1 { font-size: 1.4rem; padding: 0 2.75rem; }
+
+      /* Sizing guide: one stacked card per subnet instead of a wide table */
+      .guide-table thead { display: none; }
+      .guide-table tr {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.3rem 0.9rem;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .guide-table td { padding: 0; border-bottom: none; }
+      .guide-table td:first-child { grid-column: 1 / -1; white-space: normal; overflow-wrap: anywhere; }
+      .guide-table td:last-child { grid-column: 1 / -1; }
+      .guide-table td.size:nth-child(2)::before { content: 'Min '; font-family: inherit; color: var(--text-muted); }
+      .guide-table td.size:nth-child(3)::before { content: 'Recommended '; font-family: inherit; color: var(--text-muted); }
 
       /* Tool tabs: full width, two equal halves */
       .tool-tabs { display: flex; width: 100%; box-sizing: border-box; }
@@ -802,6 +947,7 @@
       <button class="pill"        data-provider="gcp"   onclick="setProvider('gcp')">&#9729; GCP</button>
     </div>
     <span class="provider-note" id="providerNote"></span>
+    <a class="guide-link" id="azureGuideLink" href="#azureGuide" onclick="openAzureGuide()" style="display:none">&#128207; Azure subnet sizes</a>
   </div>
 
   <div class="provider-fields" id="providerFields" style="display:none">
@@ -872,8 +1018,29 @@
   </table>
 </div>
 
+<details class="card guide-card" id="azureGuide">
+  <summary><h2>Azure subnet sizing guide</h2></summary>
+  <p>Minimum and recommended sizes for Azure subnets that host platform services. Sizes include the 5 IPs Azure reserves in every subnet. With <strong>Azure</strong> selected, type one of the required names (<code>GatewaySubnet</code>, <code>AzureBastionSubnet</code>, &hellip;) in the Name column and the splitter checks the subnet&rsquo;s size and flags typos.</p>
+  <div class="guide-scroll">
+    <table class="guide-table">
+      <thead><tr><th>Subnet</th><th>Minimum</th><th>Recommended</th><th>Notes</th></tr></thead>
+      <tbody>
+      <tr id="guide-GatewaySubnet"><td><a href="https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpn-gateway-settings" target="_blank" rel="noopener">GatewaySubnet</a><span class="reserved-tag" title="Azure requires this exact subnet name">Name</span></td><td class="size">/29</td><td class="size"><span class="rec">/27</span></td><td>/29 only for the Basic VPN Gateway SKU; all other SKUs need /27 or larger. Use /26 or larger to connect 16 ExpressRoute circuits. ExpressRoute + VPN coexistence also needs a larger subnet.</td></tr>
+      <tr id="guide-AzureFirewallSubnet"><td><a href="https://learn.microsoft.com/en-us/azure/firewall/firewall-faq" target="_blank" rel="noopener">AzureFirewallSubnet</a><span class="reserved-tag" title="Azure requires this exact subnet name">Name</span></td><td class="size">/26</td><td class="size"><span class="rec">/26</span></td><td>Must be /26. Sufficient for all scaling scenarios.</td></tr>
+      <tr id="guide-AzureFirewallManagementSubnet"><td><a href="https://learn.microsoft.com/en-us/azure/firewall/management-nic" target="_blank" rel="noopener">AzureFirewallManagementSubnet</a><span class="reserved-tag" title="Azure requires this exact subnet name">Name</span></td><td class="size">/26</td><td class="size"><span class="rec">/26</span></td><td>Required when the Management NIC is enabled (forced tunneling, packet capture). Always enabled on the Basic SKU.</td></tr>
+      <tr id="guide-AzureBastionSubnet"><td><a href="https://learn.microsoft.com/en-us/azure/bastion/configuration-settings" target="_blank" rel="noopener">AzureBastionSubnet</a><span class="reserved-tag" title="Azure requires this exact subnet name">Name</span></td><td class="size">/26</td><td class="size"><span class="rec">/26</span></td><td>/26 minimum for deployments since November 2, 2021. /26 or larger for host scaling. Not needed for the Developer SKU.</td></tr>
+      <tr id="guide-RouteServerSubnet"><td><a href="https://learn.microsoft.com/en-us/azure/route-server/route-server-faq" target="_blank" rel="noopener">RouteServerSubnet</a><span class="reserved-tag" title="Azure requires this exact subnet name">Name</span></td><td class="size">/26</td><td class="size"><span class="rec">/26</span></td><td>Dedicated subnet. No NSG or UDR support.</td></tr>
+      <tr><td><a href="https://learn.microsoft.com/en-us/azure/application-gateway/configuration-infrastructure" target="_blank" rel="noopener">Application Gateway v2</a></td><td class="size">Varies</td><td class="size"><span class="rec">/24</span></td><td>1 IP per instance + 1 private frontend IP + 5 Azure-reserved. Up to 125 instances; size for your maximum instance count.</td></tr>
+      <tr><td><a href="https://learn.microsoft.com/en-us/azure/api-management/inject-vnet-v2" target="_blank" rel="noopener">API Management (v2)</a></td><td class="size">/27</td><td class="size"><span class="rec">/24</span></td><td>2 IPs per scale unit. /24 recommended to allow scaling.</td></tr>
+      <tr><td><a href="https://learn.microsoft.com/en-us/azure/container-instances/container-instances-virtual-network-concepts" target="_blank" rel="noopener">Azure Container Instances</a></td><td class="size">/24</td><td class="size"><span class="rec">/24</span></td><td>Delegated subnet, container groups only. Smaller subnets cause &ldquo;subnet full&rdquo; deployment failures.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Each subnet links to its Microsoft Learn source. Last verified September 2026.</p>
+</details>
+
 <div class="card faq-card">
-  <h2>Cloud Reserved IP FAQ</h2>
+  <h2>Cloud Subnet &amp; Reserved IP FAQ</h2>
   <details>
     <summary>How many IP addresses does AWS reserve in each VPC subnet?</summary>
     <p>AWS reserves 5 IP addresses in every VPC subnet: the network address (<code>.0</code>), the VPC router (<code>.1</code>), the DNS server (<code>.2</code>), a future-use address (<code>.3</code>), and the broadcast address (the last address in the block). A /24 subnet with 256 addresses therefore has 251 usable IPs.</p>
@@ -889,6 +1056,14 @@
   <details>
     <summary>Why do usable host counts differ between AWS, Azure and GCP for the same subnet size?</summary>
     <p>Each cloud provider reserves a different number of addresses in every subnet for its own networking services, such as the default gateway and DNS. Select a provider above and this tool automatically adjusts the usable host count and lists exactly which addresses are reserved and why.</p>
+  </details>
+  <details>
+    <summary>What size should the AzureBastionSubnet be?</summary>
+    <p>The <code>AzureBastionSubnet</code> must be <code>/26</code> or larger for Azure Bastion deployments created on or after November 2, 2021. A /26 or larger subnet also leaves room for host scaling. The Bastion Developer SKU doesn't need a dedicated subnet.</p>
+  </details>
+  <details>
+    <summary>What is the minimum size of the Azure GatewaySubnet?</summary>
+    <p>The smallest <code>GatewaySubnet</code> is <code>/29</code>, but it's only allowed for the Basic VPN Gateway SKU. All other SKUs need <code>/27</code> or larger, and connecting 16 ExpressRoute circuits requires <code>/26</code> or larger.</p>
   </details>
 </div>
 
@@ -1010,6 +1185,109 @@ const CLOUD_PROVIDERS = {
   }
 };
 
+// Azure subnets whose name is fixed by the platform, with their size rules.
+// Keep in sync with the "Azure subnet sizing guide" table in the HTML.
+const AZURE_RESERVED_SUBNETS = [
+  { name: 'GatewaySubnet', service: 'VPN / ExpressRoute gateways', min: 29, rec: 27,
+    recNote: '/29 and /28 are only allowed for the Basic VPN Gateway SKU; all other SKUs need /27 or larger' },
+  { name: 'AzureFirewallSubnet',           service: 'Azure Firewall',                min: 26 },
+  { name: 'AzureFirewallManagementSubnet', service: 'the Azure Firewall management NIC', min: 26 },
+  { name: 'AzureBastionSubnet',            service: 'Azure Bastion',                 min: 26 },
+  { name: 'RouteServerSubnet',             service: 'Azure Route Server',            min: 26 },
+];
+
+// Edit distance, used to catch typos in reserved subnet names
+function levenshtein(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+// Checks a subnet's name against Azure's rules (Azure provider only).
+// Returns [{ level: 'error'|'warn'|'ok'|'info', text, title, anchor?, suggest?, exportText? }]
+function azureNameHints(idx) {
+  const s = subnets[idx];
+  const name = (s?.name ?? '').trim();
+  if (selectedCloud !== 'azure' || name === '') return [];
+  const lower = name.toLowerCase();
+  const hints = [];
+
+  // Azure compares names case-insensitively, so match the rule the same way
+  const rule = AZURE_RESERVED_SUBNETS.find(r => r.name.toLowerCase() === lower);
+  if (rule) {
+    if (s.bits > rule.min) {
+      hints.push({ level: 'error', text: `Needs /${rule.min} or larger`, anchor: rule.name,
+        title: `${rule.service} requires the ${rule.name} to be /${rule.min} or larger. This subnet is /${s.bits}.`,
+        exportText: `${rule.name} requires /${rule.min} or larger (this subnet is /${s.bits}).` });
+    } else if (rule.rec && s.bits > rule.rec) {
+      hints.push({ level: 'warn', text: `/${rule.rec} recommended`, anchor: rule.name,
+        title: `${rule.recNote}. This subnet is /${s.bits}.`,
+        exportText: `${rule.name}: ${rule.recNote} (this subnet is /${s.bits}).` });
+    } else {
+      hints.push({ level: 'ok', text: 'Azure reserved name', anchor: rule.name,
+        title: `${rule.name} is the subnet name required by ${rule.service}. /${s.bits} meets the size requirement.` });
+    }
+    if (name !== rule.name) hints.push({ level: 'info', suggest: rule.name });
+  } else {
+    const near = AZURE_RESERVED_SUBNETS.find(r => levenshtein(lower, r.name.toLowerCase()) <= 2);
+    if (near) hints.push({ level: 'info', suggest: near.name,
+      exportText: `"${name}" looks like a typo of the reserved subnet name ${near.name}.` });
+  }
+
+  // Subnet names must be unique within a VNet
+  if (subnets.some((o, j) => j !== idx && (o.name ?? '').trim().toLowerCase() === lower)) {
+    hints.push({ level: 'error', text: 'Duplicate name',
+      title: 'Subnet names must be unique within a VNet (compared case-insensitively).',
+      exportText: `duplicate subnet name "${name}"; names must be unique within a VNet.` });
+  }
+  return hints;
+}
+
+function renderNameHints(idx) {
+  return azureNameHints(idx).map(h => {
+    if (h.suggest) {
+      return `<span class="name-hint hint-info">Did you mean <button type="button" class="hint-fix" onclick="applyNameSuggestion(${idx}, '${h.suggest}')">${h.suggest}</button>?</span>`;
+    }
+    const icon = h.level === 'ok' ? '&#x2713;' : '&#x26A0;';
+    const title = h.title.replace(/"/g, '&quot;');
+    return h.anchor
+      ? `<a class="name-hint hint-${h.level}" href="#guide-${h.anchor}" onclick="openAzureGuide()" title="${title}">${icon} ${h.text}</a>`
+      : `<span class="name-hint hint-${h.level}" title="${title}">${icon} ${h.text}</span>`;
+  }).join('');
+}
+
+// Refresh every row's hints in place (typing must not re-render the inputs)
+function refreshNameHints() {
+  subnets.forEach((_, i) => {
+    const el = document.getElementById(`nameHints-${i}`);
+    if (el) el.innerHTML = renderNameHints(i);
+  });
+}
+
+function applyNameSuggestion(idx, name) {
+  if (!subnets[idx]) return;
+  subnets[idx].name = name;
+  renderTable();
+  updateBookmark();
+}
+
+// Comment lines warning about Azure naming/size problems, for IaC exports
+function azureExportWarnings(idx, prefix) {
+  return azureNameHints(idx)
+    .filter(h => h.exportText)
+    .map(h => `${prefix} WARNING: ${h.exportText}`);
+}
+
+function openAzureGuide() {
+  document.getElementById('azureGuide').open = true;
+}
+
 function dedup(list) {
   const seen = new Set();
   return list.filter(r => { const k = r.ip; if (seen.has(k)) return false; seen.add(k); return true; });
@@ -1118,6 +1396,7 @@ function joinSubnet(idx) {
 function updateName(idx, value) {
   if (!subnets[idx]) return;
   subnets[idx].name = value;
+  refreshNameHints();
   updateBookmark();
 }
 
@@ -1197,7 +1476,7 @@ function renderTable() {
     }
     if (col('col_name')) {
       const nameVal = (s.name ?? '').replace(/"/g, '&quot;');
-      tds += `<td><input type="text" class="name-input" value="${nameVal}" placeholder="${autoName(s, i)}" oninput="updateName(${i}, this.value)" /></td>`;
+      tds += `<td><input type="text" class="name-input" value="${nameVal}" placeholder="${autoName(s, i)}" oninput="updateName(${i}, this.value)" /><div class="name-hints" id="nameHints-${i}">${renderNameHints(i)}</div></td>`;
     }
     if (col('col_range'))
       tds += `<td class="range">${intToIp(first)}</td>`;
@@ -1451,6 +1730,10 @@ function setProvider(name) {
   });
   fieldsWrap.style.display = anyShown ? 'flex' : 'none';
 
+  // Azure: surface the subnet sizing guide
+  document.getElementById('azureGuideLink').style.display = name === 'azure' ? '' : 'none';
+  if (name === 'azure') openAzureGuide();
+
   // Enable the single CLI export button only when a provider is selected,
   // and label it with the chosen provider so the syntax is clear.
   const enabled = name !== 'none';
@@ -1632,6 +1915,7 @@ function exportAzCLI() {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
       const name = cliName(s, i);
       return [
+        ...azureExportWarnings(i, '#'),
         `az network vnet subnet create \\`,
         `  --resource-group ${rg} \\`,
         `  --vnet-name ${vnet} \\`,
@@ -1719,6 +2003,7 @@ function exportTfAzure() {
     ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
       return [
+        ...azureExportWarnings(i, '#'),
         `resource "azurerm_subnet" "${tfLabel(s, i)}" {`,
         `  name                 = "${cliName(s, i)}"`,
         `  resource_group_name  = "${rg}"`,
@@ -1797,6 +2082,7 @@ function exportBicep() {
     ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
       return [
+        ...azureExportWarnings(i, '//'),
         `resource ${tfLabel(s, i)} 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = {`,
         `  name: '\${vnetName}/${cliName(s, i)}'`,
         `  properties: {`,
