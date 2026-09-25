@@ -28,6 +28,7 @@ A modern, single-file HTML subnet calculator that lets you visually split and jo
 - **Light & dark themes** — toggle with the button in the top-right corner; your choice is remembered and defaults to your OS preference
 - **Toggleable columns** — show/hide: Subnet, Name, First Host, Last Host, Broadcast, Usable Hosts, Reserved IPs, Subnet Mask, Hex Mask, Size, Depth
 - **Cloud Reserved IP FAQ** — a short on-page FAQ answering exactly how many IPs AWS, Azure and GCP reserve per subnet, and why usable host counts differ between them
+- **Tool tabs** — a tab bar under the title switches between the Splitter and the [CIDR Calculator](#cidr-calculator); the current root block and cloud provider carry over to the other tool
 - **No dependencies** — pure HTML + CSS + vanilla JavaScript, single file, works offline
 
 ## Usage
@@ -56,12 +57,12 @@ A companion single-page tool (`calculator.html`), in the same visual style, for 
 - **Full results grid** — CIDR notation, network/broadcast address, subnet mask, wildcard mask, hex mask, total addresses, usable hosts, first/last host, IP range
 - **Cloud provider awareness** — same AWS/Azure/GCP reserved-IP logic as the splitter, with a live reserved-IP table and cloud-adjusted usable host count
 - **Copy CIDR** / **Share Link** buttons — copy the current CIDR, or copy a URL that restores the exact IP, prefix and provider
-- **Light & dark themes**, cross-linked with the splitter in the page header
-- **Cloud Reserved IP FAQ** — the same reserved-IP FAQ as the splitter, framed around single-block lookups
+- **Light & dark themes**, and the same tool tabs as the splitter — switching tabs opens the Splitter on the current block and provider
+- **CIDR Calculator FAQ** — lookup-focused questions (wildcard masks, mask ↔ CIDR conversion, usable hosts in a /24, /31 and /32, cloud reserved IPs)
 
 ## Discoverability
 
-Both pages carry per-page SEO metadata (title, description, Open Graph/Twitter cards), an inline SVG favicon, and `WebApplication` + `FAQPage` [JSON-LD](https://schema.org/) structured data — the `FAQPage` markup mirrors the on-page Cloud Reserved IP FAQ so search engines can surface it directly. `robots.txt` and `sitemap.xml` at the repo root list both pages for crawlers.
+Both pages carry per-page SEO metadata (title, description, Open Graph/Twitter cards), an inline SVG favicon, and `WebApplication` + `FAQPage` [JSON-LD](https://schema.org/) structured data — each page's `FAQPage` markup mirrors its own on-page FAQ (cloud reserved IPs on the splitter, lookup questions on the calculator), so the two pages don't compete with duplicate content. The two tools stay on separate URLs, each targeting its own search intent, and are linked through the tool tabs. `robots.txt` and `sitemap.xml` at the repo root list both pages for crawlers.
 
 ## Live Demo
 
