@@ -20,6 +20,7 @@ A modern, single-file HTML subnet calculator that lets you visually split and jo
 - **Provider-specific export fields** — when a cloud is selected, fill in the optional details that get baked into exports: VPC ID (AWS), Resource Group & VNet (Azure), or Project, Network & Region (GCP)
 - **Export suite** — download your layout in any format:
   - **CSV** / **TXT** — the table as data or an aligned text grid
+  - **Markdown** — a GitHub-flavored Markdown table (numeric columns right-aligned), ready to paste into a README, wiki or PR
   - **JSON** — structured `{ provider, subnets[] }` with CIDR, hosts, broadcast, etc.
   - **CLI** — a ready-to-run shell script for the selected provider (`az network vnet subnet create`, `aws ec2 create-subnet`, or `gcloud compute networks subnets create`)
   - **Terraform** — `azurerm_subnet`, `aws_subnet`, or `google_compute_subnetwork` resources
@@ -44,7 +45,7 @@ Open `index.html` directly in any modern browser — no build step, no server ne
 5. Select a cloud provider to see reserved IPs, adjusted host counts, and provider export fields
 6. Hover the red badge in the **Reserved IPs** column for a breakdown
 7. Untick the checkbox next to any subnet to exclude it from exports
-8. Use the **Export** buttons to download CSV, TXT, JSON, a CLI script, Terraform, or native IaC
+8. Use the **Export** buttons to download CSV, TXT, Markdown, JSON, a CLI script, Terraform, or native IaC
 9. Click **⎘** next to any subnet to copy its CIDR notation
 10. Toggle light/dark mode with the button in the top-right corner
 11. Bookmark the page URL to save your full layout (splits, names, provider, fields, and selection)
