@@ -48,8 +48,7 @@
       "Export to CSV, JSON, Terraform, Bicep, CloudFormation and provider CLI scripts",
       "Shareable, bookmarkable URLs",
       "Light and dark themes"
-    ],
-    "sameAs": ["https://gh.reichert.be/CIDRsplitter/calculator.html"]
+    ]
   }
   </script>
   <script type="application/ld+json">
@@ -157,14 +156,29 @@
       font-size: 0.95rem;
     }
 
-    header .nav-link {
-      display: inline-block;
-      margin-top: 0.6rem;
-      font-size: 0.85rem;
-      color: var(--accent2);
-      text-decoration: none;
+    /* Tool switcher: plain links styled as tabs, so each tool keeps its own URL */
+    .tool-tabs {
+      display: inline-flex;
+      gap: 0.25rem;
+      margin-top: 1rem;
+      padding: 0.25rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
     }
-    header .nav-link:hover { text-decoration: underline; }
+    .tool-tabs a {
+      padding: 0.4rem 1.1rem;
+      border-radius: 999px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tool-tabs a:hover { color: var(--text); background: var(--surface2); }
+    .tool-tabs a[aria-current="page"] { background: var(--accent); color: #fff; }
+    .tool-tabs a:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
 
     .card {
       background: var(--surface);
@@ -703,6 +717,10 @@
       /* Keep the title clear of the fixed theme toggle (40px + 1rem inset) */
       header h1 { font-size: 1.4rem; padding: 0 2.75rem; }
 
+      /* Tool tabs: full width, two equal halves */
+      .tool-tabs { display: flex; width: 100%; box-sizing: border-box; }
+      .tool-tabs a { flex: 1; padding: 0.45rem 0.4rem; font-size: 0.82rem; }
+
       /* Inputs: address full width, then mask + buttons on one row */
       .input-row {
         display: grid;
@@ -751,7 +769,10 @@
 <header>
   <h1>Visual Subnet Calculator</h1>
   <p>Split and join subnets visually. Click a row to divide or merge.</p>
-  <a class="nav-link" href="calculator.html">&#128290; Just need one CIDR's details? Try the CIDR Calculator &rarr;</a>
+  <nav class="tool-tabs" aria-label="Tools">
+    <a href="./" id="tabSplitter" aria-current="page">&#9986; Subnet Splitter</a>
+    <a href="calculator.html" id="tabCalculator">&#128290; CIDR Calculator</a>
+  </nav>
 </header>
 
 <div class="card">
@@ -1336,12 +1357,17 @@ function updateBookmark() {
   const link = document.getElementById('bookmarkLink');
   link.href = url;
   document.getElementById('bookmarkRow').style.display = '';
+
+  // Carry the current root block (and provider) over to the Calculator tab
+  const calcParams = new URLSearchParams({ ip: intToIp(baseNetwork), b: String(baseBits) });
+  if (selectedCloud !== 'none') calcParams.set('p', selectedCloud);
+  document.getElementById('tabCalculator').href = `calculator.html?${calcParams}`;
 }
 
 function loadFromUrl() {
   const params = new URLSearchParams(location.search);
   const s = params.get('s');
-  if (!s) return false;
+  if (!s) return loadRootFromUrl(params);
   const decoded = decodeState(s);
   if (!decoded || decoded.length === 0) return false;
 
@@ -1383,6 +1409,20 @@ function loadFromUrl() {
   const p = params.get('p');
   if (p && CLOUD_PROVIDERS[p]) setProvider(p);
 
+  return true;
+}
+
+// Handoff from the CIDR Calculator tab: ?ip=…&b=…[&p=…] starts a fresh tree on that block
+function loadRootFromUrl(params) {
+  const ip = ipToInt(params.get('ip') ?? '');
+  const bits = parseInt(params.get('b'), 10);
+  if (isNaN(ip) || isNaN(bits) || bits < 0 || bits > 32) return false;
+  const net = (ip & maskFromBits(bits)) >>> 0;
+  initSubnets(net, bits);
+  document.getElementById('networkAddr').value = intToIp(net);
+  document.getElementById('maskBits').value = bits;
+  const p = params.get('p');
+  if (p && CLOUD_PROVIDERS[p]) setProvider(p);
   return true;
 }
 
@@ -1868,6 +1908,8 @@ document.getElementById('networkAddr').addEventListener('paste', () => {
 document.getElementById('maskBits').addEventListener('keydown', e => {
   if (e.key === 'Enter') updateSubnets();
 });
+
+if (location.protocol === 'file:') document.getElementById('tabSplitter').href = 'index.html';
 
 if (!loadFromUrl()) {
   initSubnets(ipToInt('192.168.0.0'), 16);

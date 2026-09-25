@@ -58,34 +58,42 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "How many IP addresses does AWS reserve in each VPC subnet?",
+        "name": "What is a wildcard mask?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "AWS reserves 5 IP addresses in every VPC subnet: the network address (.0), the VPC router (.1), the DNS server (.2), a future-use address (.3), and the broadcast address (the last address in the block). A /24 subnet with 256 addresses therefore has 251 usable IPs."
+          "text": "A wildcard mask is the bitwise inverse of the subnet mask: network bits become 0 and host bits become 1. For a /24 (subnet mask 255.255.255.0) the wildcard mask is 0.0.0.255. Wildcard masks are used in Cisco ACLs and OSPF network statements."
         }
       },
       {
         "@type": "Question",
-        "name": "How many IP addresses does Azure reserve in each subnet?",
+        "name": "How do I convert a subnet mask to CIDR notation?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Azure reserves 5 IP addresses per subnet: the network address, the default gateway (.1), two addresses mapped for Azure DNS (.2 and .3), and the broadcast address (the last address in the block)."
+          "text": "Count the 1 bits in the subnet mask: that count is the prefix length. 255.255.255.0 has 24 one-bits, so it is /24; 255.255.240.0 has 20, so it is /20. The calculator shows the matching subnet mask for any prefix length."
         }
       },
       {
         "@type": "Question",
-        "name": "How many IP addresses does Google Cloud (GCP) reserve in each subnet?",
+        "name": "How many usable hosts are in a /24?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Google Cloud reserves 4 IP addresses per subnet: the network address, the default gateway (.1), a second-to-last reserved address, and the broadcast address (the last address in the block)."
+          "text": "A /24 contains 256 addresses. In a standard subnet 254 are usable, because the network and broadcast addresses are excluded. In the cloud, AWS and Azure reserve 5 addresses per subnet (251 usable) and Google Cloud reserves 4 (252 usable)."
         }
       },
       {
         "@type": "Question",
-        "name": "What is the difference between total addresses and usable hosts in a CIDR block?",
+        "name": "What do /31 and /32 mean?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Total addresses is the full size of the block (2^(32-prefix)). Usable hosts subtracts the network and broadcast address (2 addresses) for standard subnets, or subtracts every address a selected cloud provider reserves for its own networking services when AWS, Azure or GCP is selected."
+          "text": "A /32 is a single IP address, commonly used for host routes, loopbacks and firewall rules. A /31 has two addresses and, per RFC 3021, both are usable on point-to-point links because no network or broadcast address is needed."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many IP addresses do AWS, Azure and Google Cloud reserve per subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AWS reserves 5 (network, VPC router .1, DNS .2, future use .3, broadcast), Azure reserves 5 (network, gateway .1, Azure DNS .2 and .3, broadcast) and Google Cloud reserves 4 (network, gateway .1, second-to-last address, broadcast). Select a provider above to see the exact reserved addresses for your block."
         }
       }
     ]
@@ -154,14 +162,29 @@
       font-size: 0.95rem;
     }
 
-    header .nav-link {
-      display: inline-block;
-      margin-top: 0.6rem;
-      font-size: 0.85rem;
-      color: var(--accent2);
-      text-decoration: none;
+    /* Tool switcher: plain links styled as tabs, so each tool keeps its own URL */
+    .tool-tabs {
+      display: inline-flex;
+      gap: 0.25rem;
+      margin-top: 1rem;
+      padding: 0.25rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
     }
-    header .nav-link:hover { text-decoration: underline; }
+    .tool-tabs a {
+      padding: 0.4rem 1.1rem;
+      border-radius: 999px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tool-tabs a:hover { color: var(--text); background: var(--surface2); }
+    .tool-tabs a[aria-current="page"] { background: var(--accent); color: #fff; }
+    .tool-tabs a:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
 
     .card {
       background: var(--surface);
@@ -560,6 +583,10 @@
       /* Keep the title clear of the fixed theme toggle (40px + 1rem inset) */
       header h1 { font-size: 1.4rem; padding: 0 2.75rem; }
 
+      /* Tool tabs: full width, two equal halves */
+      .tool-tabs { display: flex; width: 100%; box-sizing: border-box; }
+      .tool-tabs a { flex: 1; padding: 0.45rem 0.4rem; font-size: 0.82rem; }
+
       /* Inputs: IP full width, then prefix + buttons on one row */
       .input-row {
         display: grid;
@@ -599,7 +626,10 @@
 <header>
   <h1>CIDR Calculator</h1>
   <p>Enter an IP or CIDR block and see the full breakdown, bit by bit.</p>
-  <a class="nav-link" href="index.html">&#9986; Need to split or join subnets? Try the CIDR Splitter &rarr;</a>
+  <nav class="tool-tabs" aria-label="Tools">
+    <a href="./" id="tabSplitter">&#9986; Subnet Splitter</a>
+    <a href="calculator.html" id="tabCalculator" aria-current="page">&#128290; CIDR Calculator</a>
+  </nav>
 </header>
 
 <div class="card">
@@ -666,22 +696,26 @@
 </div>
 
 <div class="card faq-card">
-  <h2>Cloud Reserved IP FAQ</h2>
+  <h2>CIDR Calculator FAQ</h2>
   <details>
-    <summary>How many IP addresses does AWS reserve in each VPC subnet?</summary>
-    <p>AWS reserves 5 IP addresses in every VPC subnet: the network address (<code>.0</code>), the VPC router (<code>.1</code>), the DNS server (<code>.2</code>), a future-use address (<code>.3</code>), and the broadcast address (the last address in the block). A /24 subnet with 256 addresses therefore has 251 usable IPs.</p>
+    <summary>What is a wildcard mask?</summary>
+    <p>A wildcard mask is the bitwise inverse of the subnet mask: network bits become <code>0</code> and host bits become <code>1</code>. For a /24 (subnet mask <code>255.255.255.0</code>) the wildcard mask is <code>0.0.0.255</code>. Wildcard masks are used in Cisco ACLs and OSPF network statements.</p>
   </details>
   <details>
-    <summary>How many IP addresses does Azure reserve in each subnet?</summary>
-    <p>Azure reserves 5 IP addresses per subnet: the network address, the default gateway (<code>.1</code>), two addresses mapped for Azure DNS (<code>.2</code> and <code>.3</code>), and the broadcast address (the last address in the block).</p>
+    <summary>How do I convert a subnet mask to CIDR notation?</summary>
+    <p>Count the <code>1</code> bits in the subnet mask: that count is the prefix length. <code>255.255.255.0</code> has 24 one-bits, so it is <code>/24</code>; <code>255.255.240.0</code> has 20, so it is <code>/20</code>. The bit grid above colors those network bits, so you can count them.</p>
   </details>
   <details>
-    <summary>How many IP addresses does Google Cloud (GCP) reserve in each subnet?</summary>
-    <p>Google Cloud reserves 4 IP addresses per subnet: the network address, the default gateway (<code>.1</code>), a second-to-last reserved address, and the broadcast address (the last address in the block).</p>
+    <summary>How many usable hosts are in a /24?</summary>
+    <p>A /24 contains 256 addresses. In a standard subnet 254 are usable, because the network and broadcast addresses are excluded. In the cloud, AWS and Azure reserve 5 addresses per subnet (251 usable) and Google Cloud reserves 4 (252 usable).</p>
   </details>
   <details>
-    <summary>What is the difference between total addresses and usable hosts?</summary>
-    <p>Total addresses is the full size of the block (2<sup>32-prefix</sup>). Usable hosts subtracts the network and broadcast address for standard subnets, or subtracts every address a selected cloud provider reserves for its own networking services when AWS, Azure or GCP is selected above.</p>
+    <summary>What do /31 and /32 mean?</summary>
+    <p>A <code>/32</code> is a single IP address, commonly used for host routes, loopbacks and firewall rules. A <code>/31</code> has two addresses and, per RFC 3021, both are usable on point-to-point links because no network or broadcast address is needed.</p>
+  </details>
+  <details>
+    <summary>How many IP addresses do AWS, Azure and Google Cloud reserve per subnet?</summary>
+    <p>AWS reserves 5 (network, VPC router <code>.1</code>, DNS <code>.2</code>, future use <code>.3</code>, broadcast), Azure reserves 5 (network, gateway <code>.1</code>, Azure DNS <code>.2</code> and <code>.3</code>, broadcast) and Google Cloud reserves 4 (network, gateway <code>.1</code>, second-to-last address, broadcast). Select a provider above to see the exact reserved addresses for your block.</p>
   </details>
 </div>
 
@@ -1015,6 +1049,14 @@ function buildShareUrl() {
 function updateBookmark() {
   const url = buildShareUrl();
   document.getElementById('bookmarkLink').href = url;
+
+  // Carry the current block (and provider) over to the Splitter tab.
+  // file:// has no directory index, so point at the file itself there.
+  const net = (ipInt & maskFromBits(prefixBits)) >>> 0;
+  const splitParams = new URLSearchParams({ ip: intToIp(net), b: String(prefixBits) });
+  if (selectedCloud !== 'none') splitParams.set('p', selectedCloud);
+  const base = location.protocol === 'file:' ? 'index.html' : './';
+  document.getElementById('tabSplitter').href = `${base}?${splitParams}`;
 }
 
 function loadFromUrl() {
