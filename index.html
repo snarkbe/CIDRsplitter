@@ -858,6 +858,7 @@
   <div class="export-row">
     <button class="btn-export" onclick="exportCSV()">&#x2B07; Export CSV</button>
     <button class="btn-export" onclick="exportTXT()">&#x2B07; Export TXT</button>
+    <button class="btn-export" onclick="exportMarkdown()">&#x2B07; Export Markdown</button>
     <button class="btn-export" onclick="exportJSON()">&#x2B07; Export JSON</button>
     <button class="btn-export" id="exportCliBtn" onclick="exportCLI()" disabled title="Select a cloud provider to enable CLI export"><span class="ico-shell">&gt;_</span> <span id="exportCliLabel">Export to CLI</span></button>
     <button class="btn-export" id="exportTfBtn" onclick="exportTerraform()" disabled title="Select a cloud provider to enable Terraform export">&#x2387; <span id="exportTfLabel">Export Terraform</span></button>
@@ -1618,6 +1619,19 @@ function exportTXT() {
     ...allRows.slice(1).map(r => r.map((v, ci) => pad(v, widths[ci])).join('  '))
   ];
   downloadFile(lines.join('\n'), 'subnets.txt', 'text/plain;charset=utf-8;');
+}
+
+// GitHub-flavored Markdown table; numeric columns are right-aligned
+function exportMarkdown() {
+  const { headers, rows } = getTableData();
+  const cell = v => String(v).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  const numeric = headers.map((_, ci) => rows.length > 0 && rows.every(r => typeof r[ci] === 'number'));
+  const lines = [
+    `| ${headers.map(cell).join(' | ')} |`,
+    `| ${numeric.map(n => (n ? '---:' : '---')).join(' | ')} |`,
+    ...rows.map(r => `| ${r.map(v => cell(typeof v === 'number' ? v.toLocaleString('en-US') : v)).join(' | ')} |`),
+  ];
+  downloadFile(lines.join('\n') + '\n', 'subnets.md', 'text/markdown;charset=utf-8;');
 }
 
 function exportAzCLI() {
