@@ -779,11 +779,12 @@
   <div class="input-row">
     <div class="field">
       <label>Network Address</label>
-      <input type="text" id="networkAddr" value="192.168.0.0" placeholder="e.g. 10.0.0.0 or 10.0.0.0/24" />
+      <!-- Default values mirror DEFAULT_NETWORK / DEFAULT_BITS in the script -->
+      <input type="text" id="networkAddr" value="10.0.0.0" placeholder="e.g. 10.0.0.0 or 10.0.0.0/24" />
     </div>
     <div class="field">
       <label>Mask Bits</label>
-      <input type="number" id="maskBits" value="16" min="0" max="32" />
+      <input type="number" id="maskBits" value="21" min="0" max="32" />
     </div>
     <div class="input-actions" style="display:flex;gap:0.5rem;align-items:flex-end;">
       <button class="btn btn-primary" onclick="updateSubnets()">Update</button>
@@ -1022,8 +1023,12 @@ function getReserved(net, bits) {
 
 // Each subnet: { network: int, bits: int, split: bool, name: string, include: bool }
 // Stored as flat array ordered by network address
+// Default block shown on first load and after Reset
+const DEFAULT_NETWORK = '10.0.0.0';
+const DEFAULT_BITS = 21;
+
 let baseNetwork = 0;
-let baseBits = 16;
+let baseBits = DEFAULT_BITS;
 let subnets = [];
 
 function initSubnets(network, bits) {
@@ -1286,12 +1291,12 @@ function updateSubnets() {
 }
 
 function resetSubnets() {
-  document.getElementById('networkAddr').value = '192.168.0.0';
-  document.getElementById('maskBits').value = '16';
+  document.getElementById('networkAddr').value = DEFAULT_NETWORK;
+  document.getElementById('maskBits').value = String(DEFAULT_BITS);
   document.getElementById('errorMsg').textContent = '';
   // Clear provider-specific fields so they don't linger after reset
   PROVIDER_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  initSubnets(ipToInt('192.168.0.0'), 16);
+  initSubnets(ipToInt(DEFAULT_NETWORK), DEFAULT_BITS);
   // setProvider('none') also re-renders and refreshes the bookmark
   setProvider('none');
 }
@@ -1912,7 +1917,7 @@ document.getElementById('maskBits').addEventListener('keydown', e => {
 if (location.protocol === 'file:') document.getElementById('tabSplitter').href = 'index.html';
 
 if (!loadFromUrl()) {
-  initSubnets(ipToInt('192.168.0.0'), 16);
+  initSubnets(ipToInt(DEFAULT_NETWORK), DEFAULT_BITS);
 }
 renderTable();
 updateBookmark();
