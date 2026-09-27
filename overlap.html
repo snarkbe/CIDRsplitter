@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIDR Overlap Checker — Find Overlapping VNet, VPC & On-Prem Ranges</title>
+
+  <!-- Primary SEO -->
+  <meta name="description" content="Free CIDR overlap checker. Paste your VNet, VPC, on-premises and VPN ranges to spot overlapping CIDR blocks before peering fails, see free address space on a visual map, and find the next free /24, /20 or /16." />
+  <meta name="keywords" content="cidr overlap checker, ip range overlap, overlapping subnets, vnet peering overlap, vpc peering overlapping cidr, ip address planning, ipam, free ip space, next available subnet, azure address space, aks service cidr overlap" />
+  <meta name="author" content="Gilles Reichert" />
+  <link rel="canonical" href="https://gh.reichert.be/CIDRsplitter/overlap.html" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
+
+  <!-- Open Graph (Facebook, LinkedIn, …) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="CIDR Splitter" />
+  <meta property="og:url" content="https://gh.reichert.be/CIDRsplitter/overlap.html" />
+  <meta property="og:title" content="CIDR Overlap Checker — Find Overlapping VNet, VPC & On-Prem Ranges" />
+  <meta property="og:description" content="Paste your cloud and on-premises ranges, spot overlapping CIDR blocks, map free address space and find the next free block of any size." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/overlap.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CIDR Overlap Checker — Find Overlapping VNet, VPC & On-Prem Ranges" />
+  <meta name="twitter:description" content="Paste your cloud and on-premises ranges, spot overlapping CIDR blocks, map free address space and find the next free block of any size." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/overlap.png" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "CIDR Overlap Checker",
+    "url": "https://gh.reichert.be/CIDRsplitter/overlap.html",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (runs in any modern browser)",
+    "browserRequirements": "Requires JavaScript",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Gilles Reichert", "url": "https://www.reichert.be" },
+    "description": "Check a list of IPv4 CIDR blocks for overlaps, see used and free address space on a visual map, and find the next free block of a given size.",
+    "featureList": [
+      "Detect duplicate and nested IPv4 CIDR blocks across VNets, VPCs and on-premises ranges",
+      "Visual address map with overlaps and free space",
+      "Next free block finder for any prefix length",
+      "Free space listed as CIDR blocks",
+      "Azure VNet and AKS reserved range checks",
+      "Export to CSV and Markdown, shareable links",
+      "Light and dark themes"
+    ],
+    "sameAs": ["https://gh.reichert.be/CIDRsplitter/"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How can two CIDR blocks overlap?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Two CIDR blocks are either completely separate, identical, or one contains the other. They can't partly overlap, because every block starts on a boundary of its own size. 10.0.0.0/16 and 10.0.1.0/24 overlap because the /24 sits inside the /16."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I peer two Azure virtual networks with overlapping address spaces?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Azure doesn't allow virtual network peering between two virtual networks with overlapping address spaces, and a virtual network whose ranges overlap an on-premises network can't be connected to it either. Check every range before you peer or add address space."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which address ranges can't be used in an Azure virtual network?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Azure doesn't let you add 224.0.0.0/4 (multicast), 255.255.255.255/32 (broadcast), 127.0.0.0/8 (loopback), 169.254.0.0/16 (link-local) or 168.63.129.16/32 (internal DNS, DHCP and Load Balancer health probes) to a virtual network."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does my AKS service CIDR conflict with my network?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Kubernetes service range must not overlap the cluster's virtual network, peered networks or on-premises ranges. With kubenet the default service CIDR is 10.0.0.0/16, which often collides with a VNet that also starts at 10.0.0.0. AKS also rejects 169.254.0.0/16, 192.0.2.0/24, 172.30.0.0/16 and 172.31.0.0/16 for service, pod and cluster virtual network ranges."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What are the private IPv4 address ranges?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "RFC 1918 reserves 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16 for private networks. RFC 6598 adds 100.64.0.0/10 as shared address space for carrier-grade NAT, which Azure also treats as private address space."
+        }
+      }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --accent2: #48cfad;
+      --accent3: #ff6b6b;
+      --warn: #ffb454;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --popup-bg: #16192b;
+      --popup-border: #3a3f60;
+      --export-hover: #2a2e44;
+      --radius: 10px;
+      --font: 'Inter', system-ui, sans-serif;
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f3f5fa;
+      --surface: #ffffff;
+      --surface2: #eef1f8;
+      --border: #d4dae8;
+      --accent: #5b54e0;
+      --accent2: #1c9e80;
+      --accent3: #e0484a;
+      --warn: #b86e00;
+      --text: #1d2230;
+      --text-muted: #5d6678;
+      --popup-bg: #ffffff;
+      --popup-border: #d4dae8;
+      --export-hover: #e4e9f4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    /* Tool switcher: plain links styled as tabs, so each tool keeps its own URL */
+    .tool-tabs {
+      display: inline-flex;
+      gap: 0.25rem;
+      margin-top: 1rem;
+      padding: 0.25rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+    }
+    .tool-tabs a {
+      padding: 0.4rem 1.1rem;
+      border-radius: 999px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tool-tabs a:hover { color: var(--text); background: var(--surface2); }
+    .tool-tabs a[aria-current="page"] { background: var(--accent); color: #fff; }
+    .tool-tabs a:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+    .tool-tabs .tab-short { display: none; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      max-width: min(1000px, calc(100vw - 2rem));
+      margin: 0 auto 1.5rem auto;
+    }
+    .card h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+      margin-top: 1rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .field input, .field textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field textarea:focus { border-color: var(--accent); }
+    .field input[type="number"] { width: 90px; }
+    .field input[type="text"] { width: 230px; }
+    .field textarea {
+      width: 100%;
+      min-height: 12rem;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .btn {
+      padding: 0.55rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    .error-msg {
+      color: var(--accent3);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+    .error-msg:empty { display: none; }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    code {
+      font-family: monospace;
+      background: var(--surface2);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      color: var(--accent2);
+      font-style: normal;
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .toggle-label input { accent-color: var(--accent); width: 15px; height: 15px; }
+
+    /* Summary stats */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.9rem 1rem;
+    }
+    .result-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0.6rem 0.8rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .result-item .r-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .result-item .r-value {
+      font-family: monospace;
+      font-size: 1rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .result-item.good .r-value { color: var(--accent2); }
+    .result-item.bad .r-value { color: var(--accent3); }
+
+    .verdict {
+      margin-bottom: 1rem;
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .verdict.good { background: rgba(72,207,173,0.12); color: var(--accent2); border: 1px solid rgba(72,207,173,0.35); }
+    .verdict.bad  { background: rgba(255,107,107,0.12); color: var(--accent3); border: 1px solid rgba(255,107,107,0.35); }
+
+    /* Address map */
+    .map-block + .map-block { margin-top: 1.5rem; }
+    .map-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.25rem 1rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.45rem;
+    }
+    .map-head .map-cidr { font-family: monospace; font-weight: 700; color: var(--text); }
+    .map-head .map-meta { color: var(--text-muted); }
+    .map-lanes {
+      position: relative;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+    }
+    .map-seg {
+      position: absolute;
+      height: 22px;
+      min-width: 3px;
+      border-radius: 4px;
+      border: 1px solid var(--seg);
+      background: color-mix(in srgb, var(--seg) 28%, transparent);
+      color: var(--text);
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 20px;
+      padding: 0 0.3rem;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      transition: filter 0.12s;
+    }
+    .map-seg:hover { filter: brightness(1.25); z-index: 2; }
+    .map-seg.conflict {
+      --seg: var(--accent3);
+      background: repeating-linear-gradient(135deg,
+        color-mix(in srgb, var(--accent3) 35%, transparent) 0 6px,
+        color-mix(in srgb, var(--accent3) 18%, transparent) 6px 12px);
+    }
+    .map-usage {
+      position: relative;
+      height: 10px;
+      border: 1px solid var(--border);
+      border-radius: 0 0 6px 6px;
+      overflow: hidden;
+      background: repeating-linear-gradient(135deg,
+        transparent 0 4px,
+        color-mix(in srgb, var(--text-muted) 22%, transparent) 4px 6px);
+    }
+    .map-usage span { position: absolute; top: 0; bottom: 0; min-width: 1px; }
+    .map-usage .used { background: var(--accent2); }
+    .map-usage .clash { background: var(--accent3); }
+    .map-axis {
+      display: flex;
+      justify-content: space-between;
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      margin-top: 1rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .map-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .legend-swatch.used { background: var(--accent2); }
+    .legend-swatch.clash { background: var(--accent3); }
+    .legend-swatch.free {
+      border: 1px solid var(--border);
+      background: repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--text-muted) 40%, transparent) 3px 5px);
+    }
+
+    /* Tables */
+    .table-scroll { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    thead { background: var(--surface2); }
+    thead th {
+      padding: 0.6rem 0.65rem;
+      text-align: left;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody tr.flash { background: rgba(108,99,255,0.18); }
+    td {
+      padding: 0.5rem 0.65rem;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .mono { font-family: monospace; }
+    .muted { color: var(--text-muted); font-size: 0.85rem; }
+    td.num { text-align: right; font-family: monospace; }
+    th.num { text-align: right; }
+    td.name { font-weight: 600; }
+    td.wrap { white-space: normal; }
+    .swatch-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.45rem;
+      background: var(--seg);
+      vertical-align: middle;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0.1rem 0.3rem 0.1rem 0;
+      white-space: nowrap;
+      border: 1px solid;
+    }
+    .badge.ok   { color: var(--accent2); border-color: rgba(72,207,173,0.45); background: rgba(72,207,173,0.10); }
+    .badge.bad  { color: var(--accent3); border-color: rgba(255,107,107,0.45); background: rgba(255,107,107,0.10); }
+    .badge.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+    .badge.info { color: var(--text-muted); border-color: var(--border); background: var(--surface2); }
+
+    .row-actions { display: inline-flex; gap: 0.3rem; }
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 26px;
+      padding: 0 0.4rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .icon-btn:hover { color: var(--text); border-color: var(--accent); }
+    .icon-btn.copied { color: var(--accent2); border-color: var(--accent2); }
+
+    /* Free space */
+    .finder-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+    .finder-results { margin-top: 1rem; }
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.5rem;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.3rem 0.25rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .chip.found { border-color: rgba(72,207,173,0.5); color: var(--accent2); }
+    .chip .icon-btn { height: 22px; min-width: 24px; border-radius: 999px; font-family: var(--font); }
+    .free-group + .free-group { margin-top: 1rem; }
+    .free-group .fg-title { font-size: 0.85rem; color: var(--text-muted); }
+    .free-group .fg-title b { font-family: monospace; color: var(--text); }
+    .muted-note { font-size: 0.85rem; color: var(--text-muted); }
+
+    .action-row {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.5rem 0.95rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-export:hover { color: var(--text); border-color: #8b94a8; background: var(--export-hover); }
+    .btn-export.copied { color: var(--accent2); border-color: var(--accent2); }
+
+    .bookmark-row {
+      margin-top: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .bookmark-row a {
+      color: var(--accent2);
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .bookmark-row a:hover { text-decoration: underline; }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 100;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+    .faq-card h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+    }
+    .faq-card details {
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 0;
+    }
+    .faq-card details:first-of-type { border-top: none; padding-top: 0; }
+    .faq-card summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--text);
+      list-style: none;
+    }
+    .faq-card summary::-webkit-details-marker { display: none; }
+    .faq-card summary::before { content: '\25B8\2002'; color: var(--accent); }
+    .faq-card details[open] summary::before { content: '\25BE\2002'; }
+    .faq-card p {
+      margin-top: 0.5rem;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+    .faq-card a { color: var(--accent2); }
+
+    @media (max-width: 600px) {
+      /* Keep the title clear of the fixed theme toggle (40px + 1rem inset) */
+      header h1 { font-size: 1.4rem; padding: 0 2.75rem; }
+
+      /* Tool tabs: full width, equal thirds with short labels */
+      .tool-tabs { display: flex; width: 100%; box-sizing: border-box; }
+      .tool-tabs a { flex: 1; padding: 0.45rem 0.4rem; font-size: 0.82rem; }
+      .tool-tabs .tab-long { display: none; }
+      .tool-tabs .tab-short { display: inline; }
+
+      .card { padding: 1.1rem; }
+
+      /* Inputs: address space full width, buttons share the next row */
+      .input-row > .field { width: 100%; }
+      .field input[type="text"] { width: 100%; }
+      .input-actions { width: 100%; }
+      .input-actions > .btn { flex: 1; }
+
+      .results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .btn-export { justify-content: center; }
+    }
+
+    /* Very narrow phones: one stat per row */
+    @media (max-width: 380px) {
+      .results-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">&#9789;</button>
+
+<header>
+  <h1>CIDR Overlap Checker</h1>
+  <p>Paste your VNets, VPCs and on-prem ranges. Spot overlaps, map free space.</p>
+  <nav class="tool-tabs" aria-label="Tools">
+    <a href="./" id="tabSplitter">&#9986; <span class="tab-long">Subnet Splitter</span><span class="tab-short">Splitter</span></a>
+    <a href="calculator.html" id="tabCalculator">&#128290; <span class="tab-long">CIDR Calculator</span><span class="tab-short">Calculator</span></a>
+    <a href="overlap.html" id="tabOverlap" aria-current="page">&#128269; <span class="tab-long">Overlap Checker</span><span class="tab-short">Overlaps</span></a>
+  </nav>
+</header>
+
+<div class="card">
+  <div class="field">
+    <label for="rangesInput">Ranges &mdash; one per line</label>
+    <textarea id="rangesInput" spellcheck="false" autocomplete="off" placeholder="hub-prod     10.0.0.0/16&#10;spoke-app    10.1.0.0/16&#10;on-prem      192.168.0.0/20"></textarea>
+  </div>
+  <p class="hint">Write <code>name 10.0.0.0/16</code>, <code>10.0.0.0/16 name</code> or <code>name: 10.0.0.0/16, 10.1.0.0/16</code> for a network with several prefixes. A bare IP counts as a <code>/32</code>, and <code>#</code> starts a comment. Lines without an IP (like CSV headers) are skipped.</p>
+
+  <div class="input-row">
+    <div class="field">
+      <label for="spaceInput">Address Space (optional)</label>
+      <input type="text" id="spaceInput" placeholder="Auto, e.g. 10.0.0.0/8" autocomplete="off" />
+    </div>
+    <div class="input-actions" style="display:flex;gap:0.5rem;align-items:flex-end;">
+      <button class="btn btn-primary" onclick="runCheck()">Check</button>
+      <button class="btn btn-secondary" onclick="loadExample()">Example</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+  <div id="errorMsg" class="error-msg"></div>
+  <p class="hint" id="parseNote"></p>
+
+  <label class="toggle-label"><input type="checkbox" id="azureChecks" checked onchange="runCheck()"> Flag ranges Azure VNets and AKS can&rsquo;t use</label>
+</div>
+
+<div class="card" id="summaryCard">
+  <h3>Summary</h3>
+  <div id="verdict" class="verdict"></div>
+  <div class="results-grid" id="summaryGrid"></div>
+</div>
+
+<div class="card" id="mapCard">
+  <h3>Address Map &mdash; click a range to find it in the table</h3>
+  <div id="mapWrap"></div>
+  <div class="map-legend">
+    <span><span class="legend-swatch used"></span> Used</span>
+    <span><span class="legend-swatch clash"></span> Overlap</span>
+    <span><span class="legend-swatch free"></span> Free</span>
+  </div>
+</div>
+
+<div class="card" id="conflictCard">
+  <h3 id="conflictTitle">Overlaps</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Range A</th><th>Range B</th><th>Relationship</th><th class="num">Shared Addresses</th></tr></thead>
+      <tbody id="conflictBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="entriesCard">
+  <h3>Ranges</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Name</th><th>CIDR</th><th class="num">Addresses</th><th>Type</th><th>Status</th><th></th></tr></thead>
+      <tbody id="entriesBody"></tbody>
+    </table>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-export" onclick="exportCSV()">&#x2B07; Export CSV</button>
+    <button class="btn-export" onclick="exportMarkdown()">&#x2B07; Export Markdown</button>
+    <button class="btn-export" id="copyFreeBtn" onclick="copyFree()">&#x2398; Copy Free Blocks</button>
+    <button class="btn-export" id="shareLinkBtn" onclick="shareLink()">&#128279; Share Link</button>
+  </div>
+  <div class="bookmark-row">
+    <a id="bookmarkLink" href="#">&#128279; Direct link to this check</a>
+  </div>
+</div>
+
+<div class="card" id="freeCard">
+  <h3>Free Space</h3>
+  <div class="finder-row">
+    <div class="field">
+      <label for="findBits">Next free block</label>
+      <input type="number" id="findBits" value="24" min="0" max="32" />
+    </div>
+    <button class="btn btn-primary" onclick="renderFinder()">Find</button>
+  </div>
+  <div class="finder-results" id="finderResults"></div>
+  <div id="freeList" style="margin-top:1.25rem"></div>
+</div>
+
+<div class="card faq-card">
+  <h2>CIDR Overlap FAQ</h2>
+  <details>
+    <summary>How can two CIDR blocks overlap?</summary>
+    <p>Two CIDR blocks are either completely separate, identical, or one contains the other. They can&rsquo;t partly overlap, because every block starts on a boundary of its own size. <code>10.0.0.0/16</code> and <code>10.0.1.0/24</code> overlap because the /24 sits inside the /16. That&rsquo;s why this tool reports each overlap as <em>identical</em> or <em>contains</em>.</p>
+  </details>
+  <details>
+    <summary>Can I peer two Azure virtual networks with overlapping address spaces?</summary>
+    <p>No. Azure <a href="https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-network/virtual-network-troubleshoot-peering-issues" target="_blank" rel="noopener">doesn&rsquo;t allow virtual network peering</a> between two virtual networks with overlapping address spaces, and a virtual network whose ranges <a href="https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network" target="_blank" rel="noopener">overlap an on-premises network can&rsquo;t be connected</a> to it either. Check every range before you peer or add address space.</p>
+  </details>
+  <details>
+    <summary>Which address ranges can&rsquo;t be used in an Azure virtual network?</summary>
+    <p>Azure <a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq" target="_blank" rel="noopener">doesn&rsquo;t let you add</a> <code>224.0.0.0/4</code> (multicast), <code>255.255.255.255/32</code> (broadcast), <code>127.0.0.0/8</code> (loopback), <code>169.254.0.0/16</code> (link-local) or <code>168.63.129.16/32</code> (internal DNS, DHCP and Load Balancer health probes) to a virtual network. Leave the Azure checkbox on to flag them.</p>
+  </details>
+  <details>
+    <summary>Why does my AKS service CIDR conflict with my network?</summary>
+    <p>The Kubernetes service range <a href="https://learn.microsoft.com/en-us/azure/aks/concepts-network-legacy-cni" target="_blank" rel="noopener">must not overlap</a> the cluster&rsquo;s virtual network, peered networks or on-premises ranges. With kubenet the <a href="https://learn.microsoft.com/en-us/azure/aks/configure-kubenet" target="_blank" rel="noopener">default service CIDR</a> is <code>10.0.0.0/16</code>, which often collides with a VNet that also starts at <code>10.0.0.0</code>. AKS also <a href="https://learn.microsoft.com/en-us/azure/aks/concepts-network-cni-overview" target="_blank" rel="noopener">rejects</a> <code>169.254.0.0/16</code>, <code>192.0.2.0/24</code>, <code>172.30.0.0/16</code> and <code>172.31.0.0/16</code> for service, pod and cluster virtual network ranges. Add your service and pod CIDRs to the list to check them.</p>
+  </details>
+  <details>
+    <summary>What are the private IPv4 address ranges?</summary>
+    <p>RFC 1918 reserves <code>10.0.0.0/8</code>, <code>172.16.0.0/12</code> and <code>192.168.0.0/16</code> for private networks. RFC 6598 adds <code>100.64.0.0/10</code> as shared address space for carrier-grade NAT, which <a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq" target="_blank" rel="noopener">Azure also treats as private</a>. The Type column labels each range, and in Auto mode the map draws one lane per private range.</p>
+  </details>
+</div>
+
+<footer>
+  <p>&copy; 2026 <a href="https://www.reichert.be" target="_blank">Gilles Reichert</a> &nbsp;&middot;&nbsp; <a href="https://github.com/snarkbe/CIDRsplitter" target="_blank">&#x2767; GitHub</a></p>
+</footer>
+
+<script>
+// ── IP helpers ──────────────────────────────────────────────────────────────
+// Blocks are { start, bits } with start as an unsigned 32-bit number. Sizes reach
+// 2^32, so range math uses plain arithmetic rather than 32-bit bitwise operators.
+
+function ipToInt(ip) {
+  const parts = ip.trim().split('.');
+  if (parts.length !== 4) return NaN;
+  let n = 0;
+  for (const p of parts) {
+    if (!/^\d{1,3}$/.test(p)) return NaN;
+    const v = parseInt(p, 10);
+    if (isNaN(v) || v < 0 || v > 255) return NaN;
+    n = (n << 8) | v;
+  }
+  return n >>> 0;
+}
+
+function intToIp(n) {
+  n = n >>> 0;
+  return `${(n >>> 24) & 0xff}.${(n >>> 16) & 0xff}.${(n >>> 8) & 0xff}.${n & 0xff}`;
+}
+
+function maskFromBits(bits) {
+  if (bits === 0) return 0;
+  return (0xffffffff << (32 - bits)) >>> 0;
+}
+
+function blockSize(bits) {
+  return Math.pow(2, 32 - bits);
+}
+
+function blockEnd(b) { return b.start + blockSize(b.bits) - 1; }
+function cidrOf(b) { return `${intToIp(b.start)}/${b.bits}`; }
+function contains(outer, inner) { return inner.start >= outer.start && blockEnd(inner) <= blockEnd(outer); }
+function overlaps(a, b) { return a.start <= blockEnd(b) && b.start <= blockEnd(a); }
+
+function parseCidr(str) {
+  const m = /^\s*(\d{1,3}(?:\.\d{1,3}){3})\s*(?:\/\s*(\d{1,2}))?\s*$/.exec(str);
+  if (!m) return null;
+  const ip = ipToInt(m[1]);
+  const bits = m[2] === undefined ? 32 : parseInt(m[2], 10);
+  if (isNaN(ip) || bits < 0 || bits > 32) return null;
+  return { start: (ip & maskFromBits(bits)) >>> 0, bits, raw: ip };
+}
+
+// Smallest set of CIDR blocks that exactly covers [start, end]
+function rangeToCidrs(start, end) {
+  const out = [];
+  while (start <= end) {
+    let size = 1;
+    while (start % (size * 2) === 0 && start + size * 2 - 1 <= end && size < 4294967296) size *= 2;
+    out.push({ start, bits: 32 - Math.log2(size) });
+    start += size;
+  }
+  return out;
+}
+
+// Smallest CIDR block covering every block in the list
+function coveringBlock(list) {
+  const lo = Math.min(...list.map(b => b.start));
+  const hi = Math.max(...list.map(blockEnd));
+  let bits = 32;
+  while (bits > 0 && Math.floor(lo / blockSize(bits)) !== Math.floor(hi / blockSize(bits))) bits--;
+  return { start: Math.floor(lo / blockSize(bits)) * blockSize(bits), bits };
+}
+
+// Sorted, merged [start, end] intervals
+function mergeIntervals(list) {
+  const sorted = list.slice().sort((a, b) => a[0] - b[0]);
+  const out = [];
+  for (const [s, e] of sorted) {
+    const last = out[out.length - 1];
+    if (last && s <= last[1] + 1) last[1] = Math.max(last[1], e);
+    else out.push([s, e]);
+  }
+  return out;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ── Well-known ranges ───────────────────────────────────────────────────────
+
+// Most specific first: the first match wins for the Type column
+const SPECIAL_RANGES = [
+  { cidr: '10.0.0.0/8',      type: 'Private',       rfc: 'RFC 1918' },
+  { cidr: '172.16.0.0/12',   type: 'Private',       rfc: 'RFC 1918' },
+  { cidr: '192.168.0.0/16',  type: 'Private',       rfc: 'RFC 1918' },
+  { cidr: '100.64.0.0/10',   type: 'Shared (CGNAT)', rfc: 'RFC 6598' },
+  { cidr: '0.0.0.0/8',       type: '"This network"', rfc: 'RFC 1122' },
+  { cidr: '127.0.0.0/8',     type: 'Loopback',      rfc: 'RFC 1122' },
+  { cidr: '169.254.0.0/16',  type: 'Link-local',    rfc: 'RFC 3927' },
+  { cidr: '192.0.2.0/24',    type: 'Documentation', rfc: 'RFC 5737' },
+  { cidr: '198.51.100.0/24', type: 'Documentation', rfc: 'RFC 5737' },
+  { cidr: '203.0.113.0/24',  type: 'Documentation', rfc: 'RFC 5737' },
+  { cidr: '198.18.0.0/15',   type: 'Benchmarking',  rfc: 'RFC 2544' },
+  { cidr: '224.0.0.0/4',     type: 'Multicast',     rfc: 'RFC 5771' },
+  { cidr: '240.0.0.0/4',     type: 'Reserved',      rfc: 'RFC 1112' },
+].map(r => ({ ...r, block: parseCidr(r.cidr) }));
+
+// Auto mode draws one map lane per private range that holds entries
+const AUTO_SPACES = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '100.64.0.0/10'].map(parseCidr);
+
+// Sources: learn.microsoft.com/azure/virtual-network/virtual-networks-faq
+// and learn.microsoft.com/azure/aks/concepts-network-cni-overview (verified September 2026)
+const AZURE_BLOCKED = [
+  { cidr: '224.0.0.0/4',        why: 'Azure VNets can’t use multicast' },
+  { cidr: '255.255.255.255/32', why: 'Azure VNets can’t use broadcast' },
+  { cidr: '127.0.0.0/8',        why: 'Azure VNets can’t use loopback' },
+  { cidr: '169.254.0.0/16',     why: 'Azure VNets and AKS can’t use link-local' },
+  { cidr: '168.63.129.16/32',   why: 'Azure VNets can’t use 168.63.129.16 (internal DNS, DHCP, health probes)' },
+  { cidr: '192.0.2.0/24',       why: 'AKS can’t use 192.0.2.0/24' },
+  { cidr: '172.30.0.0/16',      why: 'AKS can’t use 172.30.0.0/16' },
+  { cidr: '172.31.0.0/16',      why: 'AKS can’t use 172.31.0.0/16' },
+].map(r => ({ ...r, block: parseCidr(r.cidr) }));
+
+function classify(b) {
+  const home = SPECIAL_RANGES.find(r => contains(r.block, b));
+  if (home) return { type: home.type, title: `${home.cidr} (${home.rfc})` };
+  const inside = SPECIAL_RANGES.filter(r => overlaps(r.block, b));
+  if (inside.length) return { type: 'Mixed', title: `Spans public space and ${inside.map(r => r.cidr).join(', ')}` };
+  return { type: 'Public', title: 'Publicly routable address space' };
+}
+
+// ── Parsing ──────────────────────────────────────────────────────────────────
+
+const PALETTE = ['#6c63ff', '#48cfad', '#3ea8ff', '#f5a623', '#e056fd', '#26de81', '#fd9644', '#a55eea', '#45aaf2', '#fc5c65'];
+
+const EXAMPLE = [
+  '# Azure hub & spokes',
+  'hub-prod        10.0.0.0/16',
+  'spoke-app       10.1.0.0/16',
+  'spoke-data      10.2.0.0/16',
+  'spoke-dev       10.1.128.0/20',
+  'aks-services    10.0.0.0/16',
+  '',
+  '# On-premises & VPN',
+  'on-prem-hq      192.168.0.0/20',
+  'on-prem-branch  192.168.8.0/22',
+  'vpn-clients     172.16.200.0/24',
+].join('\n');
+
+const IP_TOKEN = /(\d{1,3}(?:\.\d{1,3}){3})(\s*\/\s*\d{1,2})?/g;
+
+function parseRanges(text) {
+  const entries = [];
+  const errors = [];
+  let skipped = 0;
+  text.split(/\r?\n/).forEach((rawLine, lineIdx) => {
+    const line = rawLine.replace(/#.*$/, '').trim();
+    if (!line) return;
+    const tokens = [...line.matchAll(IP_TOKEN)];
+    if (!tokens.length) { skipped++; return; }
+    // A line with CIDRs (e.g. a Splitter CSV row) ignores bare IPs like masks and hosts
+    const withPrefix = tokens.filter(t => t[2]);
+    const use = withPrefix.length ? withPrefix : tokens;
+    let label = line;
+    for (const t of tokens) label = label.replace(t[0], ' ');
+    label = label.replace(/[,;|=\t]+/g, ' ').replace(/:\s*$/, '').replace(/^\s*:/, '').replace(/\s+/g, ' ').trim().replace(/:$/, '').trim();
+    for (const t of use) {
+      const b = parseCidr(t[1] + (t[2] || ''));
+      if (!b) { errors.push(`Line ${lineIdx + 1}: "${t[0].trim()}" isn't a valid IPv4 address or CIDR.`); continue; }
+      entries.push({
+        start: b.start,
+        bits: b.bits,
+        name: label || `range-${entries.length + 1}`,
+        normalizedFrom: b.raw !== b.start ? `${intToIp(b.raw)}/${b.bits}` : null,
+        line: lineIdx + 1,
+      });
+    }
+  });
+  entries.forEach((e, i) => { e.id = i; e.color = PALETTE[i % PALETTE.length]; });
+  return { entries, errors, skipped };
+}
+
+// ── Analysis ─────────────────────────────────────────────────────────────────
+
+let state = null;
+
+function analyze(entries, explicitSpace, azureChecks) {
+  // Pairwise overlaps: CIDR blocks are either disjoint or nested
+  const conflicts = [];
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      const a = entries[i], b = entries[j];
+      if (!overlaps(a, b)) continue;
+      let rel, inner;
+      if (a.start === b.start && a.bits === b.bits) { rel = 'identical'; inner = a; }
+      else if (a.bits < b.bits) { rel = 'contains'; inner = b; }
+      else { rel = 'contained'; inner = a; }
+      conflicts.push({ a, b, rel, inner });
+    }
+  }
+  entries.forEach(e => { e.conflictsWith = []; });
+  conflicts.forEach(c => { c.a.conflictsWith.push(c.b); c.b.conflictsWith.push(c.a); });
+
+  entries.forEach(e => {
+    e.kind = classify(e);
+    e.azure = azureChecks ? AZURE_BLOCKED.filter(r => overlaps(r.block, e)) : [];
+  });
+
+  // Address spaces: the explicit one, or maximal blocks among the private ranges and entries
+  let spaces;
+  if (explicitSpace) {
+    spaces = [explicitSpace];
+  } else {
+    const candidates = [...AUTO_SPACES.filter(s => entries.some(e => contains(s, e))), ...entries.map(e => ({ start: e.start, bits: e.bits }))];
+    spaces = [];
+    candidates
+      .sort((a, b) => a.bits - b.bits || a.start - b.start)
+      .forEach(c => { if (!spaces.some(s => contains(s, c))) spaces.push(c); });
+    spaces.sort((a, b) => a.start - b.start);
+  }
+
+  entries.forEach(e => {
+    e.outside = !spaces.some(s => overlaps(s, e)) ? 'outside' : (!spaces.some(s => contains(s, e)) ? 'partly' : null);
+  });
+
+  const conflictIntervals = mergeIntervals(conflicts.map(c => [c.inner.start, blockEnd(c.inner)]));
+
+  const spaceInfo = spaces.map(space => {
+    const sStart = space.start, sEnd = blockEnd(space);
+    const members = entries.filter(e => overlaps(space, e));
+    const used = mergeIntervals(members.map(e => [Math.max(e.start, sStart), Math.min(blockEnd(e), sEnd)]));
+    const free = [];
+    let cursor = sStart;
+    for (const [s, e] of used) {
+      if (s > cursor) free.push([cursor, s - 1]);
+      cursor = e + 1;
+    }
+    if (cursor <= sEnd) free.push([cursor, sEnd]);
+    const usedCount = used.reduce((n, [s, e]) => n + (e - s + 1), 0);
+    const clash = conflictIntervals
+      .filter(([s, e]) => s <= sEnd && e >= sStart)
+      .map(([s, e]) => [Math.max(s, sStart), Math.min(e, sEnd)]);
+    // The map zooms on the occupied part of a big space, one level wider for context
+    let view = space;
+    if (members.length) {
+      const clipped = members.map(e => (contains(space, e) ? e : space));
+      const cover = coveringBlock(clipped);
+      view = cover.bits - 1 > space.bits ? { start: Math.floor(cover.start / blockSize(cover.bits - 1)) * blockSize(cover.bits - 1), bits: cover.bits - 1 } : space;
+    }
+    return { space, view, members, used, free, usedCount, clash, freeCidrs: free.flatMap(([s, e]) => rangeToCidrs(s, e)) };
+  });
+
+  return { entries, conflicts, spaces: spaceInfo };
+}
+
+// ── Rendering ────────────────────────────────────────────────────────────────
+
+function pct(n, total) { return (n / total) * 100; }
+
+function fmtPct(n, total) {
+  if (n === 0) return '0%';
+  const p = pct(n, total);
+  if (p < 0.01) return '<0.01%';
+  return (p < 10 ? p.toFixed(2) : p.toFixed(1)).replace(/\.?0+$/, '') + '%';
+}
+
+function stat(label, value, cls) {
+  return `<div class="result-item ${cls || ''}"><span class="r-label">${label}</span><span class="r-value">${value}</span></div>`;
+}
+
+function renderSummary() {
+  const { entries, conflicts, spaces } = state;
+  const total = spaces.reduce((n, s) => n + blockSize(s.space.bits), 0);
+  const used = spaces.reduce((n, s) => n + s.usedCount, 0);
+  const largest = spaces.flatMap(s => s.freeCidrs).reduce((best, b) => (!best || b.bits < best.bits ? b : best), null);
+  const warnings = entries.filter(e => e.azure.length || e.outside).length;
+
+  const verdict = document.getElementById('verdict');
+  if (!entries.length) {
+    verdict.className = 'verdict good';
+    verdict.textContent = 'No ranges yet \u2014 the whole address space is free. Paste ranges above to check them.';
+  } else if (conflicts.length) {
+    const n = new Set(conflicts.flatMap(c => [c.a.id, c.b.id])).size;
+    verdict.className = 'verdict bad';
+    verdict.textContent = `✖ ${conflicts.length} overlap${conflicts.length > 1 ? 's' : ''} across ${n} ranges. These can't be peered or routed to each other as-is.`;
+  } else {
+    verdict.className = 'verdict good';
+    verdict.textContent = `✔ No overlaps across ${entries.length} range${entries.length > 1 ? 's' : ''}.`;
+  }
+
+  document.getElementById('summaryGrid').innerHTML = [
+    stat('Ranges', entries.length),
+    stat('Overlaps', conflicts.length, conflicts.length ? 'bad' : 'good'),
+    stat('Warnings', warnings, warnings ? 'bad' : ''),
+    stat(spaces.length > 1 ? 'Address Spaces' : 'Address Space', spaces.length > 1 ? spaces.length : cidrOf(spaces[0].space)),
+    stat('Used', `${used.toLocaleString()} (${fmtPct(used, total)})`),
+    stat('Free', (total - used).toLocaleString(), 'good'),
+    stat('Largest Free Block', largest ? cidrOf(largest) : '&mdash;'),
+  ].join('');
+}
+
+function renderMap() {
+  const wrap = document.getElementById('mapWrap');
+  wrap.innerHTML = state.spaces.map(info => {
+    const { space, view, members, usedCount } = info;
+    const size = blockSize(view.bits);
+    const sStart = view.start, sEnd = blockEnd(view);
+    const clip = list => list.filter(([s, e]) => s <= sEnd && e >= sStart).map(([s, e]) => [Math.max(s, sStart), Math.min(e, sEnd)]);
+    const used = clip(info.used), clash = clip(info.clash);
+    const spaceSize = blockSize(space.bits);
+
+    // Greedy lanes: wider blocks first so containers sit above what they contain
+    const lanes = [];
+    const placed = members
+      .slice()
+      .sort((a, b) => a.start - b.start || a.bits - b.bits)
+      .filter(e => overlaps(view, e))
+      .map(e => {
+        const s = Math.max(e.start, sStart), en = Math.min(blockEnd(e), sEnd);
+        let lane = lanes.findIndex(lastEnd => lastEnd < s);
+        if (lane === -1) { lane = lanes.length; lanes.push(en); } else lanes[lane] = en;
+        return { e, s, en, lane };
+      });
+
+    const segs = placed.map(({ e, s, en, lane }) =>
+      `<div class="map-seg ${e.conflictsWith.length ? 'conflict' : ''}" style="--seg:${e.color};left:${pct(s - sStart, size)}%;width:${pct(en - s + 1, size)}%;top:${4 + lane * 26}px"
+        title="${esc(e.name)} — ${cidrOf(e)}${e.conflictsWith.length ? ` (overlaps ${esc(e.conflictsWith.map(o => o.name).join(', '))})` : ''}"
+        onclick="focusRow(${e.id})">${esc(e.name)}</div>`
+    ).join('');
+
+    const bar = (list, cls) => list.map(([s, e]) =>
+      `<span class="${cls}" style="left:${pct(s - sStart, size)}%;width:${pct(e - s + 1, size)}%"></span>`).join('');
+
+    const mid = sStart + size / 2;
+    return `<div class="map-block">
+      <div class="map-head"><span class="map-cidr">${cidrOf(space)}</span>
+        <span class="map-meta">${members.length} range${members.length === 1 ? '' : 's'} &middot; ${fmtPct(usedCount, spaceSize)} used &middot; ${(spaceSize - usedCount).toLocaleString()} free${view !== space ? ` &middot; zoomed on ${cidrOf(view)}` : ''}</span></div>
+      <div class="map-lanes" style="height:${Math.max(1, lanes.length) * 26 + 6}px">${segs}</div>
+      <div class="map-usage">${bar(used, 'used')}${bar(clash, 'clash')}</div>
+      <div class="map-axis"><span>${intToIp(sStart)}</span>${space.bits < 32 ? `<span>${intToIp(mid)}</span>` : ''}<span>${intToIp(sEnd)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function relText(c) {
+  if (c.rel === 'identical') return 'Identical';
+  return c.rel === 'contains' ? 'A contains B' : 'B contains A';
+}
+
+function nameCell(e) {
+  return `<span class="swatch-dot" style="--seg:${e.color}"></span><a href="#row-${e.id}" onclick="focusRow(${e.id});return false" style="color:inherit;text-decoration:none"><b>${esc(e.name)}</b></a> <span class="mono muted">${cidrOf(e)}</span>`;
+}
+
+function renderConflicts() {
+  const card = document.getElementById('conflictCard');
+  const { conflicts } = state;
+  if (!conflicts.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  document.getElementById('conflictTitle').textContent = `Overlaps (${conflicts.length})`;
+  document.getElementById('conflictBody').innerHTML = conflicts.map(c => `<tr>
+    <td>${nameCell(c.a)}</td>
+    <td>${nameCell(c.b)}</td>
+    <td><span class="badge bad">${relText(c)}</span></td>
+    <td class="num">${blockSize(c.inner.bits).toLocaleString()} <span class="muted">(${cidrOf(c.inner)})</span></td>
+  </tr>`).join('');
+}
+
+function statusBadges(e) {
+  const out = [];
+  if (e.conflictsWith.length) {
+    out.push(`<span class="badge bad" title="${esc(e.conflictsWith.map(o => `${o.name} ${cidrOf(o)}`).join('\n'))}">Overlaps ${e.conflictsWith.length}</span>`);
+  }
+  if (e.outside === 'outside') out.push('<span class="badge warn" title="Not inside the address space above">Outside space</span>');
+  if (e.outside === 'partly') out.push('<span class="badge warn" title="Only part of this range is inside the address space above">Partly outside</span>');
+  e.azure.forEach(r => out.push(`<span class="badge warn" title="${esc(r.why)}">${esc(r.why)}</span>`));
+  if (e.normalizedFrom) out.push(`<span class="badge info" title="Host bits were set, so the block was aligned to its network address">From ${e.normalizedFrom}</span>`);
+  if (!e.conflictsWith.length && !e.outside && !e.azure.length) out.unshift('<span class="badge ok">OK</span>');
+  return out.join('');
+}
+
+function renderEntries() {
+  document.getElementById('entriesBody').innerHTML = state.entries.map(e => `<tr id="row-${e.id}">
+    <td class="name"><span class="swatch-dot" style="--seg:${e.color}"></span>${esc(e.name)}</td>
+    <td class="mono" title="${intToIp(e.start)} \u2013 ${intToIp(blockEnd(e))}">${cidrOf(e)}</td>
+    <td class="num">${blockSize(e.bits).toLocaleString()}</td>
+    <td><span class="badge info" title="${esc(e.kind.title)}">${esc(e.kind.type)}</span></td>
+    <td class="wrap">${statusBadges(e)}</td>
+    <td><span class="row-actions">
+      <a class="icon-btn" href="${toolUrl('splitter', e)}" title="Split ${cidrOf(e)} in the Subnet Splitter">&#9986;</a>
+      <a class="icon-btn" href="${toolUrl('calculator', e)}" title="Open ${cidrOf(e)} in the CIDR Calculator">&#128290;</a>
+      <button class="icon-btn" onclick="copyText('${cidrOf(e)}', this)" title="Copy ${cidrOf(e)}">&#x2398;</button>
+    </span></td>
+  </tr>`).join('');
+}
+
+function focusRow(id) {
+  const row = document.getElementById(`row-${id}`);
+  if (!row) return;
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  row.classList.add('flash');
+  setTimeout(() => row.classList.remove('flash'), 1200);
+}
+
+// ── Free space ───────────────────────────────────────────────────────────────
+
+const FIND_LIMIT = 8;
+const FREE_LIST_LIMIT = 48;
+
+function findFree(bits) {
+  const size = blockSize(bits);
+  const results = [];
+  for (const info of state.spaces) {
+    if (bits < info.space.bits) continue;
+    for (const [s, e] of info.free) {
+      let start = Math.ceil(s / size) * size;
+      while (start + size - 1 <= e && results.length < FIND_LIMIT) {
+        results.push({ start, bits, space: info.space });
+        start += size;
+      }
+      if (results.length >= FIND_LIMIT) return results;
+    }
+  }
+  return results;
+}
+
+function freeChip(b, found) {
+  const cidr = cidrOf(b);
+  return `<span class="chip ${found ? 'found' : ''}">${cidr}
+    <a class="icon-btn" href="${toolUrl('splitter', b)}" title="Split ${cidr} in the Subnet Splitter">&#9986;</a>
+    <button class="icon-btn" onclick="copyText('${cidr}', this)" title="Copy ${cidr}">&#x2398;</button></span>`;
+}
+
+function renderFinder() {
+  const out = document.getElementById('finderResults');
+  if (!state) { out.innerHTML = ''; return; }
+  const bits = parseInt(document.getElementById('findBits').value, 10);
+  if (isNaN(bits) || bits < 0 || bits > 32) { out.innerHTML = '<p class="error-msg">Prefix length must be 0&ndash;32.</p>'; return; }
+  const found = findFree(bits);
+  out.innerHTML = found.length
+    ? `<div class="muted-note">First free /${bits} block${found.length > 1 ? 's' : ''}, in address order:</div><div class="chip-list">${found.map(b => freeChip(b, true)).join('')}</div>`
+    : `<div class="muted-note">No free /${bits} in ${state.spaces.length > 1 ? 'any address space' : cidrOf(state.spaces[0].space)}.${state.spaces.every(s => bits < s.space.bits) ? ' It\'s larger than the address space itself.' : ''}</div>`;
+  updateBookmark();
+}
+
+function renderFreeList() {
+  document.getElementById('freeList').innerHTML = state.spaces.map(info => {
+    const list = info.freeCidrs;
+    const shown = list.slice(0, FREE_LIST_LIMIT);
+    return `<div class="free-group">
+      <div class="fg-title">Free in <b>${cidrOf(info.space)}</b> &mdash; ${list.length ? `${list.length} block${list.length > 1 ? 's' : ''}` : 'none, fully used'}</div>
+      ${list.length ? `<div class="chip-list">${shown.map(b => freeChip(b, false)).join('')}</div>` : ''}
+      ${list.length > shown.length ? `<div class="hint">&hellip;and ${list.length - shown.length} more. Copy Free Blocks gets them all.</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Orchestration ────────────────────────────────────────────────────────────
+
+const RESULT_CARDS = ['summaryCard', 'mapCard', 'conflictCard', 'entriesCard', 'freeCard'];
+
+function runCheck() {
+  const errEl = document.getElementById('errorMsg');
+  const noteEl = document.getElementById('parseNote');
+  errEl.textContent = '';
+  noteEl.textContent = '';
+
+  const { entries, errors, skipped } = parseRanges(document.getElementById('rangesInput').value);
+
+  let space = null;
+  const spaceRaw = document.getElementById('spaceInput').value.trim();
+  if (spaceRaw) {
+    space = parseCidr(spaceRaw);
+    if (!space) errors.unshift('Invalid address space (expected e.g. 10.0.0.0/8), so Auto is used.');
+  }
+
+  if (errors.length) errEl.innerHTML = errors.slice(0, 5).map(esc).join('<br>') + (errors.length > 5 ? `<br>&hellip;and ${errors.length - 5} more.` : '');
+  if (skipped) noteEl.textContent = `${skipped} line${skipped > 1 ? 's' : ''} without an IP skipped.`;
+
+  if (!entries.length && !space) {
+    state = null;
+    RESULT_CARDS.forEach(id => { document.getElementById(id).style.display = 'none'; });
+    updateBookmark();
+    return;
+  }
+
+  state = analyze(entries, space, document.getElementById('azureChecks').checked);
+  RESULT_CARDS.forEach(id => { document.getElementById(id).style.display = ''; });
+  document.getElementById('entriesCard').style.display = entries.length ? '' : 'none';
+  renderSummary();
+  renderMap();
+  renderConflicts();
+  if (entries.length) renderEntries();
+  renderFinder();
+  renderFreeList();
+  updateBookmark();
+}
+
+let debounceTimer = null;
+document.getElementById('rangesInput').addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(runCheck, 300);
+});
+document.getElementById('spaceInput').addEventListener('keydown', e => { if (e.key === 'Enter') runCheck(); });
+document.getElementById('spaceInput').addEventListener('change', runCheck);
+document.getElementById('findBits').addEventListener('keydown', e => { if (e.key === 'Enter') renderFinder(); });
+
+function loadExample() {
+  document.getElementById('rangesInput').value = EXAMPLE;
+  document.getElementById('spaceInput').value = '';
+  runCheck();
+}
+
+function clearAll() {
+  document.getElementById('rangesInput').value = '';
+  document.getElementById('spaceInput').value = '';
+  runCheck();
+  document.getElementById('rangesInput').focus();
+}
+
+// ── Copy / export ────────────────────────────────────────────────────────────
+
+function flashButton(btn, label) {
+  const original = btn.innerHTML;
+  btn.classList.add('copied');
+  btn.innerHTML = label ? `&#x2713; ${label}` : '&#x2713;';
+  setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1500);
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => flashButton(btn));
+}
+
+function copyFree() {
+  if (!state) return;
+  const text = state.spaces.flatMap(s => s.freeCidrs.map(cidrOf)).join('\n');
+  navigator.clipboard.writeText(text).then(() => flashButton(document.getElementById('copyFreeBtn'), 'Copied!'));
+}
+
+function statusText(e) {
+  const parts = [];
+  if (e.conflictsWith.length) parts.push(`Overlaps ${e.conflictsWith.map(o => `${o.name} (${cidrOf(o)})`).join(', ')}`);
+  if (e.outside === 'outside') parts.push('Outside address space');
+  if (e.outside === 'partly') parts.push('Partly outside address space');
+  e.azure.forEach(r => parts.push(r.why));
+  if (e.normalizedFrom) parts.push(`Normalized from ${e.normalizedFrom}`);
+  return parts.length ? parts.join('; ') : 'OK';
+}
+
+function entryRows() {
+  return state.entries.map(e => [e.name, cidrOf(e), intToIp(e.start), intToIp(blockEnd(e)), blockSize(e.bits), e.kind.type, statusText(e)]);
+}
+const ENTRY_HEADERS = ['Name', 'CIDR', 'First IP', 'Last IP', 'Addresses', 'Type', 'Status'];
+
+function exportCSV() {
+  if (!state) return;
+  const cell = v => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  const lines = [ENTRY_HEADERS, ...entryRows()].map(r => r.map(cell).join(','));
+  downloadFile(lines.join('\n') + '\n', 'cidr-overlaps.csv', 'text/csv;charset=utf-8;');
+}
+
+// GitHub-flavored Markdown report: ranges, overlaps and free space
+function exportMarkdown() {
+  if (!state) return;
+  const cell = v => String(v).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  const table = (headers, rows, numeric) => [
+    `| ${headers.map(cell).join(' | ')} |`,
+    `| ${headers.map((_, i) => (numeric.includes(i) ? '---:' : '---')).join(' | ')} |`,
+    ...rows.map(r => `| ${r.map(v => cell(typeof v === 'number' ? v.toLocaleString('en-US') : v)).join(' | ')} |`),
+  ].join('\n');
+  const { conflicts, spaces } = state;
+  const md = [
+    '# CIDR overlap check',
+    '',
+    conflicts.length ? `**${conflicts.length} overlap${conflicts.length > 1 ? 's' : ''} found.**` : '**No overlaps.**',
+    '',
+    '## Ranges',
+    '',
+    table(ENTRY_HEADERS, entryRows(), [4]),
+  ];
+  if (conflicts.length) {
+    md.push('', '## Overlaps', '', table(['Range A', 'Range B', 'Relationship', 'Shared addresses'],
+      conflicts.map(c => [`${c.a.name} (${cidrOf(c.a)})`, `${c.b.name} (${cidrOf(c.b)})`, relText(c), blockSize(c.inner.bits)]), [3]));
+  }
+  md.push('', '## Free space', '');
+  spaces.forEach(s => {
+    md.push(`- **${cidrOf(s.space)}**: ${s.freeCidrs.length ? s.freeCidrs.map(b => `\`${cidrOf(b)}\``).join(', ') : 'fully used'}`);
+  });
+  downloadFile(md.join('\n') + '\n', 'cidr-overlaps.md', 'text/markdown;charset=utf-8;');
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+// ── URLs: share link and tool handoff ────────────────────────────────────────
+
+// Provider picked in the other tools; this page doesn't use it but passes it along
+let carriedProvider = null;
+
+function b64encode(str) {
+  let bin = '';
+  new TextEncoder().encode(str).forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function b64decode(str) {
+  const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+
+function toolUrl(tool, b) {
+  const params = new URLSearchParams({ ip: intToIp(b.start), b: String(b.bits) });
+  if (carriedProvider) params.set('p', carriedProvider);
+  if (tool === 'calculator') return `calculator.html?${params}`;
+  // file:// has no directory index, so point at the file itself there
+  return `${location.protocol === 'file:' ? 'index.html' : './'}?${params}`;
+}
+
+function buildShareUrl() {
+  const params = new URLSearchParams();
+  const text = document.getElementById('rangesInput').value.trim();
+  if (text) params.set('r', b64encode(text));
+  const space = document.getElementById('spaceInput').value.trim();
+  if (space) params.set('s', space);
+  if (!document.getElementById('azureChecks').checked) params.set('az', '0');
+  const bits = document.getElementById('findBits').value;
+  if (bits && bits !== '24') params.set('f', bits);
+  if (carriedProvider) params.set('p', carriedProvider);
+  const qs = params.toString();
+  return `${location.origin}${location.pathname}${qs ? `?${qs}` : ''}`;
+}
+
+function shareLink() {
+  navigator.clipboard.writeText(buildShareUrl()).then(() => {
+    flashButton(document.getElementById('shareLinkBtn'), 'Link Copied!');
+  });
+}
+
+function updateBookmark() {
+  document.getElementById('bookmarkLink').href = buildShareUrl();
+
+  // The other tabs open on the address space (explicit, else the first auto one)
+  const target = state && state.spaces.length ? state.spaces[0].space : null;
+  document.getElementById('tabSplitter').href = target ? toolUrl('splitter', target) : (location.protocol === 'file:' ? 'index.html' : './');
+  document.getElementById('tabCalculator').href = target ? toolUrl('calculator', target) : 'calculator.html';
+}
+
+function loadFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const p = params.get('p');
+  if (p && ['aws', 'azure', 'gcp'].includes(p)) carriedProvider = p;
+
+  const r = params.get('r');
+  if (r) {
+    try { document.getElementById('rangesInput').value = b64decode(r); } catch { /* ignore malformed data */ }
+  }
+  const s = params.get('s');
+  if (s && parseCidr(s)) document.getElementById('spaceInput').value = s;
+  if (params.get('az') === '0') document.getElementById('azureChecks').checked = false;
+  const f = parseInt(params.get('f'), 10);
+  if (!isNaN(f) && f >= 0 && f <= 32) document.getElementById('findBits').value = f;
+
+  // Handoff from the Splitter or Calculator tab: ?ip=…&b=… becomes the address space
+  const ip = ipToInt(params.get('ip') ?? '');
+  const bits = parseInt(params.get('b'), 10);
+  if (!isNaN(ip) && !isNaN(bits) && bits >= 0 && bits <= 32) {
+    document.getElementById('spaceInput').value = cidrOf({ start: (ip & maskFromBits(bits)) >>> 0, bits });
+    return true;
+  }
+  return !!(r || s);
+}
+
+// ── Theme ──────────────────────────────────────────────────────────────────────
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.innerHTML = theme === 'light' ? '&#9790;' : '&#9789;';
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem('cidr-theme', next); } catch { /* storage may be blocked */ }
+}
+
+(function initTheme() {
+  let theme;
+  try { theme = localStorage.getItem('cidr-theme'); } catch { theme = null; }
+  if (theme !== 'light' && theme !== 'dark') {
+    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  applyTheme(theme);
+})();
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+if (!loadFromUrl()) document.getElementById('rangesInput').value = EXAMPLE;
+runCheck();
+</script>
+</body>
+</html>

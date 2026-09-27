@@ -185,6 +185,7 @@
     .tool-tabs a:hover { color: var(--text); background: var(--surface2); }
     .tool-tabs a[aria-current="page"] { background: var(--accent); color: #fff; }
     .tool-tabs a:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+    .tool-tabs .tab-short { display: none; }
 
     .card {
       background: var(--surface);
@@ -583,9 +584,11 @@
       /* Keep the title clear of the fixed theme toggle (40px + 1rem inset) */
       header h1 { font-size: 1.4rem; padding: 0 2.75rem; }
 
-      /* Tool tabs: full width, two equal halves */
+      /* Tool tabs: full width, equal thirds with short labels */
       .tool-tabs { display: flex; width: 100%; box-sizing: border-box; }
       .tool-tabs a { flex: 1; padding: 0.45rem 0.4rem; font-size: 0.82rem; }
+      .tool-tabs .tab-long { display: none; }
+      .tool-tabs .tab-short { display: inline; }
 
       /* Inputs: IP full width, then prefix + buttons on one row */
       .input-row {
@@ -627,8 +630,9 @@
   <h1>CIDR Calculator</h1>
   <p>Enter an IP or CIDR block and see the full breakdown, bit by bit.</p>
   <nav class="tool-tabs" aria-label="Tools">
-    <a href="./" id="tabSplitter">&#9986; Subnet Splitter</a>
-    <a href="calculator.html" id="tabCalculator" aria-current="page">&#128290; CIDR Calculator</a>
+    <a href="./" id="tabSplitter">&#9986; <span class="tab-long">Subnet Splitter</span><span class="tab-short">Splitter</span></a>
+    <a href="calculator.html" id="tabCalculator" aria-current="page">&#128290; <span class="tab-long">CIDR Calculator</span><span class="tab-short">Calculator</span></a>
+    <a href="overlap.html" id="tabOverlap">&#128269; <span class="tab-long">Overlap Checker</span><span class="tab-short">Overlaps</span></a>
   </nav>
 </header>
 
@@ -1050,13 +1054,14 @@ function updateBookmark() {
   const url = buildShareUrl();
   document.getElementById('bookmarkLink').href = url;
 
-  // Carry the current block (and provider) over to the Splitter tab.
+  // Carry the current block (and provider) over to the Splitter and Overlap tabs.
   // file:// has no directory index, so point at the file itself there.
   const net = (ipInt & maskFromBits(prefixBits)) >>> 0;
   const splitParams = new URLSearchParams({ ip: intToIp(net), b: String(prefixBits) });
   if (selectedCloud !== 'none') splitParams.set('p', selectedCloud);
   const base = location.protocol === 'file:' ? 'index.html' : './';
   document.getElementById('tabSplitter').href = `${base}?${splitParams}`;
+  document.getElementById('tabOverlap').href = `overlap.html?${splitParams}`;
 }
 
 function loadFromUrl() {
