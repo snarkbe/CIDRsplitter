@@ -7,7 +7,7 @@
 
   <!-- Primary SEO -->
   <meta name="description" content="Free CIDR overlap checker. Paste your VNet, VPC, on-premises and VPN ranges to spot overlapping CIDR blocks before peering fails, see free address space on a visual map, and find the next free /24, /20 or /16." />
-  <meta name="keywords" content="cidr overlap checker, ip range overlap, overlapping subnets, vnet peering overlap, vpc peering overlapping cidr, ip address planning, ipam, free ip space, next available subnet, azure address space, aks service cidr overlap" />
+  <meta name="keywords" content="cidr overlap checker, ip range overlap, overlapping subnets, vnet peering overlap, vpc peering overlapping cidr, gcp subnet ranges, aws vpc cidr restrictions, ip address planning, ipam, free ip space, next available subnet, azure address space, aks service cidr overlap" />
   <meta name="author" content="Gilles Reichert" />
   <link rel="canonical" href="https://gh.reichert.be/CIDRsplitter/overlap.html" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c63ff'/%3E%3Cstop offset='1' stop-color='%2348cfad'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.92'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='white' fill-opacity='0.55'/%3E%3C/svg%3E" />
@@ -46,7 +46,7 @@
       "Visual address map with overlaps and free space",
       "Next free block finder for any prefix length",
       "Free space listed as CIDR blocks",
-      "Azure VNet and AKS reserved range checks",
+      "AWS, Azure and GCP reserved range checks",
       "Export to CSV and Markdown, shareable links",
       "Light and dark themes"
     ],
@@ -68,10 +68,10 @@
       },
       {
         "@type": "Question",
-        "name": "Can I peer two Azure virtual networks with overlapping address spaces?",
+        "name": "Can I peer networks with overlapping address spaces?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Azure doesn't allow virtual network peering between two virtual networks with overlapping address spaces, and a virtual network whose ranges overlap an on-premises network can't be connected to it either. Check every range before you peer or add address space."
+          "text": "No, not on the three big clouds. Azure doesn't allow virtual network peering between virtual networks with overlapping address spaces. AWS can't create a VPC peering connection between VPCs with matching or overlapping CIDR blocks, even if only one of several blocks overlaps. Google Cloud doesn't allow subnet ranges to overlap across peered VPC networks."
         }
       },
       {
@@ -80,6 +80,22 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Azure doesn't let you add 224.0.0.0/4 (multicast), 255.255.255.255/32 (broadcast), 127.0.0.0/8 (loopback), 169.254.0.0/16 (link-local) or 168.63.129.16/32 (internal DNS, DHCP and Load Balancer health probes) to a virtual network."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which address ranges can't be used in an AWS VPC?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AWS doesn't let you use 0.0.0.0/8, 127.0.0.0/8 (loopback), 169.254.0.0/16 (link-local) or 224.0.0.0/4 (multicast) for a VPC, and each VPC CIDR block must be between /16 and /28. AWS also advises against 172.17.0.0/16, which AWS Cloud9 and Amazon SageMaker AI use."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which address ranges can't be used in a Google Cloud subnet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Google Cloud prohibits 0.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16, 224.0.0.0/4, 255.255.255.255/32, Google's own public IP addresses and the Private Google Access addresses 199.36.153.4/30 and 199.36.153.8/30. It advises avoiding 10.128.0.0/9, used by auto mode VPC networks, and 172.17.0.0/16, used by the default Docker bridge network."
         }
       },
       {
@@ -288,16 +304,43 @@
       font-style: normal;
     }
 
-    .toggle-label {
-      display: inline-flex;
+    /* Cloud checks: toggle pills, same look as the provider pills in the other tools */
+    .provider-row {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
       align-items: center;
-      gap: 0.4rem;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      cursor: pointer;
-      margin-top: 1rem;
     }
-    .toggle-label input { accent-color: var(--accent); width: 15px; height: 15px; }
+    .provider-row > .row-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .pill-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .pill {
+      padding: 0.28rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1.5;
+    }
+    .pill:hover { border-color: #8b94a8; color: var(--text); }
+    .pill.active[data-provider="aws"]   { background: rgba(255,153,0,0.15);   border-color: #ff9900; color: #ff9900; }
+    .pill.active[data-provider="azure"] { background: rgba(0,120,212,0.15);   border-color: #0078d4; color: #3ea8ff; }
+    .pill.active[data-provider="gcp"]   { background: rgba(66,133,244,0.15);  border-color: #4285f4; color: #7aabff; }
+    .provider-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
 
     /* Summary stats */
     .results-grid {
@@ -649,6 +692,9 @@
       .input-actions { width: 100%; }
       .input-actions > .btn { flex: 1; }
 
+      .provider-row > .row-label { width: 100%; }
+      .pill-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+
       .results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .btn-export { justify-content: center; }
@@ -695,7 +741,15 @@
   <div id="errorMsg" class="error-msg"></div>
   <p class="hint" id="parseNote"></p>
 
-  <label class="toggle-label"><input type="checkbox" id="azureChecks" checked onchange="runCheck()"> Flag ranges Azure VNets and AKS can&rsquo;t use</label>
+  <div class="provider-row">
+    <span class="row-label">Cloud checks:</span>
+    <div class="pill-group" id="cloudPills">
+      <button class="pill active" data-provider="aws"   aria-pressed="true" onclick="toggleCloud(this)">&#9729; AWS</button>
+      <button class="pill active" data-provider="azure" aria-pressed="true" onclick="toggleCloud(this)">&#9729; Azure</button>
+      <button class="pill active" data-provider="gcp"   aria-pressed="true" onclick="toggleCloud(this)">&#9729; GCP</button>
+    </div>
+    <span class="provider-note">Flags ranges each selected cloud refuses or advises against.</span>
+  </div>
 </div>
 
 <div class="card" id="summaryCard">
@@ -764,12 +818,20 @@
     <p>Two CIDR blocks are either completely separate, identical, or one contains the other. They can&rsquo;t partly overlap, because every block starts on a boundary of its own size. <code>10.0.0.0/16</code> and <code>10.0.1.0/24</code> overlap because the /24 sits inside the /16. That&rsquo;s why this tool reports each overlap as <em>identical</em> or <em>contains</em>.</p>
   </details>
   <details>
-    <summary>Can I peer two Azure virtual networks with overlapping address spaces?</summary>
-    <p>No. Azure <a href="https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-network/virtual-network-troubleshoot-peering-issues" target="_blank" rel="noopener">doesn&rsquo;t allow virtual network peering</a> between two virtual networks with overlapping address spaces, and a virtual network whose ranges <a href="https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network" target="_blank" rel="noopener">overlap an on-premises network can&rsquo;t be connected</a> to it either. Check every range before you peer or add address space.</p>
+    <summary>Can I peer networks with overlapping address spaces?</summary>
+    <p>No, not on the three big clouds. Azure <a href="https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-network/virtual-network-troubleshoot-peering-issues" target="_blank" rel="noopener">doesn&rsquo;t allow virtual network peering</a> between virtual networks with overlapping address spaces. AWS <a href="https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-basics.html" target="_blank" rel="noopener">can&rsquo;t create a VPC peering connection</a> between VPCs with matching or overlapping CIDR blocks, even if only one of several blocks overlaps. Google Cloud <a href="https://docs.cloud.google.com/vpc/docs/vpc-peering" target="_blank" rel="noopener">doesn&rsquo;t allow subnet ranges to overlap</a> across peered VPC networks. VPN and on-premises links need unique ranges too.</p>
   </details>
   <details>
     <summary>Which address ranges can&rsquo;t be used in an Azure virtual network?</summary>
-    <p>Azure <a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq" target="_blank" rel="noopener">doesn&rsquo;t let you add</a> <code>224.0.0.0/4</code> (multicast), <code>255.255.255.255/32</code> (broadcast), <code>127.0.0.0/8</code> (loopback), <code>169.254.0.0/16</code> (link-local) or <code>168.63.129.16/32</code> (internal DNS, DHCP and Load Balancer health probes) to a virtual network. Leave the Azure checkbox on to flag them.</p>
+    <p>Azure <a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq" target="_blank" rel="noopener">doesn&rsquo;t let you add</a> <code>224.0.0.0/4</code> (multicast), <code>255.255.255.255/32</code> (broadcast), <code>127.0.0.0/8</code> (loopback), <code>169.254.0.0/16</code> (link-local) or <code>168.63.129.16/32</code> (internal DNS, DHCP and Load Balancer health probes) to a virtual network. Keep the Azure check on to flag them.</p>
+  </details>
+  <details>
+    <summary>Which address ranges can&rsquo;t be used in an AWS VPC?</summary>
+    <p>AWS <a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html" target="_blank" rel="noopener">doesn&rsquo;t let you use</a> <code>0.0.0.0/8</code>, <code>127.0.0.0/8</code> (loopback), <code>169.254.0.0/16</code> (link-local) or <code>224.0.0.0/4</code> (multicast) for a VPC, and each VPC CIDR block must be between <code>/16</code> and <code>/28</code>. AWS also advises against <code>172.17.0.0/16</code>, which AWS Cloud9 and Amazon SageMaker AI use. For EKS, the Kubernetes service range <a href="https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html" target="_blank" rel="noopener">defaults to</a> <code>10.100.0.0/16</code> or <code>172.20.0.0/16</code> and must not overlap the cluster&rsquo;s VPC.</p>
+  </details>
+  <details>
+    <summary>Which address ranges can&rsquo;t be used in a Google Cloud subnet?</summary>
+    <p>Google Cloud <a href="https://docs.cloud.google.com/vpc/docs/subnets" target="_blank" rel="noopener">prohibits</a> <code>0.0.0.0/8</code>, <code>127.0.0.0/8</code>, <code>169.254.0.0/16</code>, <code>224.0.0.0/4</code>, <code>255.255.255.255/32</code>, Google&rsquo;s own public IP addresses and the Private Google Access addresses <code>199.36.153.4/30</code> and <code>199.36.153.8/30</code>. It advises avoiding <code>10.128.0.0/9</code>, used by auto mode VPC networks (it blocks peering and VPN with them), and <code>172.17.0.0/16</code>, used by the default Docker bridge network. Subnets must be between <code>/29</code> and <code>/4</code>, with <code>/8</code> as a practical maximum.</p>
   </details>
   <details>
     <summary>Why does my AKS service CIDR conflict with my network?</summary>
@@ -890,18 +952,41 @@ const SPECIAL_RANGES = [
 // Auto mode draws one map lane per private range that holds entries
 const AUTO_SPACES = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '100.64.0.0/10'].map(parseCidr);
 
-// Sources: learn.microsoft.com/azure/virtual-network/virtual-networks-faq
-// and learn.microsoft.com/azure/aks/concepts-network-cni-overview (verified September 2026)
-const AZURE_BLOCKED = [
-  { cidr: '224.0.0.0/4',        why: 'Azure VNets can’t use multicast' },
-  { cidr: '255.255.255.255/32', why: 'Azure VNets can’t use broadcast' },
-  { cidr: '127.0.0.0/8',        why: 'Azure VNets can’t use loopback' },
-  { cidr: '169.254.0.0/16',     why: 'Azure VNets and AKS can’t use link-local' },
-  { cidr: '168.63.129.16/32',   why: 'Azure VNets can’t use 168.63.129.16 (internal DNS, DHCP, health probes)' },
-  { cidr: '192.0.2.0/24',       why: 'AKS can’t use 192.0.2.0/24' },
-  { cidr: '172.30.0.0/16',      why: 'AKS can’t use 172.30.0.0/16' },
-  { cidr: '172.31.0.0/16',      why: 'AKS can’t use 172.31.0.0/16' },
+// Ranges each cloud refuses (blocked) or warns against (avoid). `who` maps a cloud
+// to the product name shown in the badge. Sources, verified September 2026:
+//   AWS   docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html
+//   Azure learn.microsoft.com/azure/virtual-network/virtual-networks-faq
+//         learn.microsoft.com/azure/aks/concepts-network-cni-overview
+//   GCP   docs.cloud.google.com/vpc/docs/subnets
+const CLOUDS = { aws: 'AWS', azure: 'Azure', gcp: 'GCP' };
+const CLOUD_RULES = [
+  { cidr: '0.0.0.0/8',          level: 'blocked', label: 'current network',   who: { aws: 'AWS', gcp: 'GCP' } },
+  { cidr: '127.0.0.0/8',        level: 'blocked', label: 'loopback',          who: { aws: 'AWS', azure: 'Azure', gcp: 'GCP' } },
+  { cidr: '169.254.0.0/16',     level: 'blocked', label: 'link-local',        who: { aws: 'AWS', azure: 'Azure', gcp: 'GCP' } },
+  { cidr: '224.0.0.0/4',        level: 'blocked', label: 'multicast',         who: { aws: 'AWS', azure: 'Azure', gcp: 'GCP' } },
+  { cidr: '255.255.255.255/32', level: 'blocked', label: 'broadcast',         who: { azure: 'Azure', gcp: 'GCP' } },
+  { cidr: '168.63.129.16/32',   level: 'blocked', label: 'Azure platform DNS, DHCP and health probes', who: { azure: 'Azure' } },
+  { cidr: '192.0.2.0/24',       level: 'blocked', label: 'reserved by AKS',   who: { azure: 'AKS' } },
+  { cidr: '172.30.0.0/16',      level: 'blocked', label: 'reserved by AKS',   who: { azure: 'AKS' } },
+  { cidr: '172.31.0.0/16',      level: 'blocked', label: 'reserved by AKS',   who: { azure: 'AKS' } },
+  { cidr: '199.36.153.4/30',    level: 'blocked', label: 'Private Google Access VIPs', who: { gcp: 'GCP' } },
+  { cidr: '199.36.153.8/30',    level: 'blocked', label: 'Private Google Access VIPs', who: { gcp: 'GCP' } },
+  { cidr: '172.17.0.0/16',      level: 'avoid',   label: 'used by Docker, AWS Cloud9 and SageMaker AI', who: { aws: 'AWS', gcp: 'GCP' } },
+  { cidr: '10.128.0.0/9',       level: 'avoid',   label: 'GCP auto mode subnets; blocks peering and VPN with auto mode networks', who: { gcp: 'GCP' } },
 ].map(r => ({ ...r, block: parseCidr(r.cidr) }));
+
+// Rules hit by a block for the active clouds, as badge-ready lines
+function cloudFindings(b, active) {
+  return CLOUD_RULES
+    .filter(r => overlaps(r.block, b))
+    .map(r => {
+      const names = Object.keys(r.who).filter(c => active.includes(c)).map(c => r.who[c]);
+      if (!names.length) return null;
+      const verb = r.level === 'blocked' ? 'can\u2019t use' : (names.length > 1 ? 'advise against' : 'advises against');
+      return { level: r.level, text: `${names.join(', ')} ${verb} ${r.cidr} (${r.label})` };
+    })
+    .filter(Boolean);
+}
 
 function classify(b) {
   const home = SPECIAL_RANGES.find(r => contains(r.block, b));
@@ -966,7 +1051,7 @@ function parseRanges(text) {
 
 let state = null;
 
-function analyze(entries, explicitSpace, azureChecks) {
+function analyze(entries, explicitSpace, clouds) {
   // Pairwise overlaps: CIDR blocks are either disjoint or nested
   const conflicts = [];
   for (let i = 0; i < entries.length; i++) {
@@ -985,7 +1070,7 @@ function analyze(entries, explicitSpace, azureChecks) {
 
   entries.forEach(e => {
     e.kind = classify(e);
-    e.azure = azureChecks ? AZURE_BLOCKED.filter(r => overlaps(r.block, e)) : [];
+    e.cloud = cloudFindings(e, clouds);
   });
 
   // Address spaces: the explicit one, or maximal blocks among the private ranges and entries
@@ -1055,7 +1140,7 @@ function renderSummary() {
   const total = spaces.reduce((n, s) => n + blockSize(s.space.bits), 0);
   const used = spaces.reduce((n, s) => n + s.usedCount, 0);
   const largest = spaces.flatMap(s => s.freeCidrs).reduce((best, b) => (!best || b.bits < best.bits ? b : best), null);
-  const warnings = entries.filter(e => e.azure.length || e.outside).length;
+  const warnings = entries.filter(e => e.cloud.length || e.outside).length;
 
   const verdict = document.getElementById('verdict');
   if (!entries.length) {
@@ -1154,9 +1239,9 @@ function statusBadges(e) {
   }
   if (e.outside === 'outside') out.push('<span class="badge warn" title="Not inside the address space above">Outside space</span>');
   if (e.outside === 'partly') out.push('<span class="badge warn" title="Only part of this range is inside the address space above">Partly outside</span>');
-  e.azure.forEach(r => out.push(`<span class="badge warn" title="${esc(r.why)}">${esc(r.why)}</span>`));
+  e.cloud.forEach(f => out.push(`<span class="badge ${f.level === 'blocked' ? 'warn' : 'info'}" title="${f.level === 'blocked' ? 'Refused by the provider' : 'Allowed, but the provider advises against it'}">${esc(f.text)}</span>`));
   if (e.normalizedFrom) out.push(`<span class="badge info" title="Host bits were set, so the block was aligned to its network address">From ${e.normalizedFrom}</span>`);
-  if (!e.conflictsWith.length && !e.outside && !e.azure.length) out.unshift('<span class="badge ok">OK</span>');
+  if (!e.conflictsWith.length && !e.outside && !e.cloud.length) out.unshift('<span class="badge ok">OK</span>');
   return out.join('');
 }
 
@@ -1265,7 +1350,7 @@ function runCheck() {
     return;
   }
 
-  state = analyze(entries, space, document.getElementById('azureChecks').checked);
+  state = analyze(entries, space, activeClouds());
   RESULT_CARDS.forEach(id => { document.getElementById(id).style.display = ''; });
   document.getElementById('entriesCard').style.display = entries.length ? '' : 'none';
   renderSummary();
@@ -1323,7 +1408,7 @@ function statusText(e) {
   if (e.conflictsWith.length) parts.push(`Overlaps ${e.conflictsWith.map(o => `${o.name} (${cidrOf(o)})`).join(', ')}`);
   if (e.outside === 'outside') parts.push('Outside address space');
   if (e.outside === 'partly') parts.push('Partly outside address space');
-  e.azure.forEach(r => parts.push(r.why));
+  e.cloud.forEach(f => parts.push(f.text));
   if (e.normalizedFrom) parts.push(`Normalized from ${e.normalizedFrom}`);
   return parts.length ? parts.join('; ') : 'OK';
 }
@@ -1383,7 +1468,7 @@ function downloadFile(content, filename, type) {
 
 // ── URLs: share link and tool handoff ────────────────────────────────────────
 
-// Provider picked in the other tools; this page doesn't use it but passes it along
+// Provider picked in the other tools: it narrows the cloud checks and is passed back along
 let carriedProvider = null;
 
 function b64encode(str) {
@@ -1397,9 +1482,36 @@ function b64decode(str) {
   return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
 }
 
+function activeClouds() {
+  return [...document.querySelectorAll('#cloudPills .pill.active')].map(btn => btn.dataset.provider);
+}
+
+function setActiveClouds(list) {
+  document.querySelectorAll('#cloudPills .pill').forEach(btn => {
+    const on = list.includes(btn.dataset.provider);
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  });
+}
+
+function toggleCloud(btn) {
+  const list = activeClouds();
+  const c = btn.dataset.provider;
+  setActiveClouds(list.includes(c) ? list.filter(x => x !== c) : [...list, c]);
+  runCheck();
+}
+
+// Provider to hand to the other tools: the one they sent, else the only active check
+function handoffProvider() {
+  if (carriedProvider) return carriedProvider;
+  const list = activeClouds();
+  return list.length === 1 ? list[0] : null;
+}
+
 function toolUrl(tool, b) {
   const params = new URLSearchParams({ ip: intToIp(b.start), b: String(b.bits) });
-  if (carriedProvider) params.set('p', carriedProvider);
+  const p = handoffProvider();
+  if (p) params.set('p', p);
   if (tool === 'calculator') return `calculator.html?${params}`;
   // file:// has no directory index, so point at the file itself there
   return `${location.protocol === 'file:' ? 'index.html' : './'}?${params}`;
@@ -1411,7 +1523,8 @@ function buildShareUrl() {
   if (text) params.set('r', b64encode(text));
   const space = document.getElementById('spaceInput').value.trim();
   if (space) params.set('s', space);
-  if (!document.getElementById('azureChecks').checked) params.set('az', '0');
+  const clouds = activeClouds();
+  if (clouds.length !== Object.keys(CLOUDS).length) params.set('c', clouds.join(',') || 'none');
   const bits = document.getElementById('findBits').value;
   if (bits && bits !== '24') params.set('f', bits);
   if (carriedProvider) params.set('p', carriedProvider);
@@ -1437,7 +1550,9 @@ function updateBookmark() {
 function loadFromUrl() {
   const params = new URLSearchParams(location.search);
   const p = params.get('p');
-  if (p && ['aws', 'azure', 'gcp'].includes(p)) carriedProvider = p;
+  if (p && CLOUDS[p]) { carriedProvider = p; setActiveClouds([p]); }
+  const c = params.get('c');
+  if (c) setActiveClouds(c.split(',').filter(x => CLOUDS[x]));
 
   const r = params.get('r');
   if (r) {
@@ -1445,7 +1560,6 @@ function loadFromUrl() {
   }
   const s = params.get('s');
   if (s && parseCidr(s)) document.getElementById('spaceInput').value = s;
-  if (params.get('az') === '0') document.getElementById('azureChecks').checked = false;
   const f = parseInt(params.get('f'), 10);
   if (!isNaN(f) && f >= 0 && f <= 32) document.getElementById('findBits').value = f;
 

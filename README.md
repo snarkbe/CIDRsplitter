@@ -76,12 +76,15 @@ A third page (`overlap.html`), in the same visual style, for checking many range
 - **Next free block** — enter a prefix length to get the first free, correctly aligned blocks of that size, each with a one-click link to split it in the Splitter
 - **Free space as CIDRs** — the unused part of each address space, broken down into the fewest CIDR blocks, with **Copy Free Blocks** for the full list
 - **Range types** — each range is labeled Private (RFC 1918), Shared/CGNAT (RFC 6598), Link-local, Loopback, Multicast, Documentation, Benchmarking, Reserved, Public or Mixed
-- **Azure checks** (toggleable) — flags ranges Azure virtual networks can't use (`224.0.0.0/4`, `255.255.255.255/32`, `127.0.0.0/8`, `169.254.0.0/16`, `168.63.129.16/32` — [docs](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq)) and ranges AKS rejects (`169.254.0.0/16`, `192.0.2.0/24`, `172.30.0.0/16`, `172.31.0.0/16` — [docs](https://learn.microsoft.com/en-us/azure/aks/concepts-network-cni-overview))
+- **Cloud checks** — toggle AWS, Azure and GCP (any combination, for multi-cloud networks) to flag ranges each provider refuses or advises against. Arriving from the Splitter or Calculator with a provider selected narrows the checks to that provider
+  - **AWS** — can't use `0.0.0.0/8`, `127.0.0.0/8`, `169.254.0.0/16`, `224.0.0.0/4`; advises against `172.17.0.0/16` (AWS Cloud9, SageMaker AI) — [docs](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html)
+  - **Azure** — VNets can't use `224.0.0.0/4`, `255.255.255.255/32`, `127.0.0.0/8`, `169.254.0.0/16`, `168.63.129.16/32` — [docs](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq); AKS also rejects `192.0.2.0/24`, `172.30.0.0/16`, `172.31.0.0/16` — [docs](https://learn.microsoft.com/en-us/azure/aks/concepts-network-cni-overview)
+  - **GCP** — subnets can't use `0.0.0.0/8`, `127.0.0.0/8`, `169.254.0.0/16`, `224.0.0.0/4`, `255.255.255.255/32`, `199.36.153.4/30`, `199.36.153.8/30`; advises against `10.128.0.0/9` (auto mode subnets) and `172.17.0.0/16` (Docker bridge) — [docs](https://docs.cloud.google.com/vpc/docs/subnets)
 - **Host bits normalized** — `10.0.0.5/16` is treated as `10.0.0.0/16` and flagged, so a typo can't hide an overlap
 - **Row shortcuts** — open any range in the Splitter or the Calculator, or copy its CIDR
 - **Export** — CSV of the ranges and their status, or a Markdown report (ranges, overlaps, free space) ready for a wiki or a PR
 - **Share Link** — the ranges, address space and settings are encoded in the URL
-- **Overlap FAQ** — how CIDR blocks overlap, Azure peering and address space rules, AKS service CIDR conflicts, private IPv4 ranges
+- **Overlap FAQ** — how CIDR blocks overlap, peering rules on AWS, Azure and GCP, ranges each cloud refuses, AKS service CIDR conflicts, private IPv4 ranges
 
 ## Discoverability
 
