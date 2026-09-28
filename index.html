@@ -195,6 +195,7 @@
     .tool-tabs a:hover { color: var(--text); background: var(--surface2); }
     .tool-tabs a[aria-current="page"] { background: var(--accent); color: #fff; }
     .tool-tabs a:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+    .tool-tabs .tab-short { display: none; }
 
     .card {
       background: var(--surface);
@@ -862,9 +863,11 @@
       .guide-table td.size:nth-child(2)::before { content: 'Min '; font-family: inherit; color: var(--text-muted); }
       .guide-table td.size:nth-child(3)::before { content: 'Recommended '; font-family: inherit; color: var(--text-muted); }
 
-      /* Tool tabs: full width, two equal halves */
+      /* Tool tabs: full width, equal thirds with short labels */
       .tool-tabs { display: flex; width: 100%; box-sizing: border-box; }
       .tool-tabs a { flex: 1; padding: 0.45rem 0.4rem; font-size: 0.82rem; }
+      .tool-tabs .tab-long { display: none; }
+      .tool-tabs .tab-short { display: inline; }
 
       /* Inputs: address full width, then mask + buttons on one row */
       .input-row {
@@ -915,8 +918,9 @@
   <h1>Visual Subnet Calculator</h1>
   <p>Split and join subnets visually. Click a row to divide or merge.</p>
   <nav class="tool-tabs" aria-label="Tools">
-    <a href="./" id="tabSplitter" aria-current="page">&#9986; Subnet Splitter</a>
-    <a href="calculator.html" id="tabCalculator">&#128290; CIDR Calculator</a>
+    <a href="./" id="tabSplitter" aria-current="page">&#9986; <span class="tab-long">Subnet Splitter</span><span class="tab-short">Splitter</span></a>
+    <a href="calculator.html" id="tabCalculator">&#128290; <span class="tab-long">CIDR Calculator</span><span class="tab-short">Calculator</span></a>
+    <a href="overlap.html" id="tabOverlap">&#128269; <span class="tab-long">Overlap Checker</span><span class="tab-short">Overlaps</span></a>
   </nav>
 </header>
 
@@ -1643,10 +1647,11 @@ function updateBookmark() {
   link.href = url;
   document.getElementById('bookmarkRow').style.display = '';
 
-  // Carry the current root block (and provider) over to the Calculator tab
+  // Carry the current root block (and provider) over to the Calculator and Overlap tabs
   const calcParams = new URLSearchParams({ ip: intToIp(baseNetwork), b: String(baseBits) });
   if (selectedCloud !== 'none') calcParams.set('p', selectedCloud);
   document.getElementById('tabCalculator').href = `calculator.html?${calcParams}`;
+  document.getElementById('tabOverlap').href = `overlap.html?${calcParams}`;
 }
 
 function loadFromUrl() {
@@ -1697,7 +1702,7 @@ function loadFromUrl() {
   return true;
 }
 
-// Handoff from the CIDR Calculator tab: ?ip=…&b=…[&p=…] starts a fresh tree on that block
+// Handoff from the CIDR Calculator or Overlap Checker tab: ?ip=…&b=…[&p=…] starts a fresh tree on that block
 function loadRootFromUrl(params) {
   const ip = ipToInt(params.get('ip') ?? '');
   const bits = parseInt(params.get('b'), 10);

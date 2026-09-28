@@ -1,6 +1,6 @@
 # CIDR Splitter — Visual Subnet Calculator
 
-A modern, single-file HTML subnet calculator that lets you visually split and join CIDR blocks, with cloud provider IP reservation awareness. Includes a companion [CIDR Calculator](#cidr-calculator) page for looking up a single block's details.
+A modern, single-file HTML subnet calculator that lets you visually split and join CIDR blocks, with cloud provider IP reservation awareness. Includes two companion pages: a [CIDR Calculator](#cidr-calculator) for looking up a single block's details, and a [CIDR Overlap Checker](#cidr-overlap-checker) for spotting overlapping ranges and free space across networks.
 
 ![CIDR Splitter screenshot](https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/screenshot.png)
 
@@ -31,7 +31,7 @@ A modern, single-file HTML subnet calculator that lets you visually split and jo
 - **Light & dark themes** — toggle with the button in the top-right corner; your choice is remembered and defaults to your OS preference
 - **Toggleable columns** — show/hide: Subnet, Name, First Host, Last Host, Broadcast, Usable Hosts, Reserved IPs, Subnet Mask, Hex Mask, Size, Depth
 - **Cloud Reserved IP FAQ** — a short on-page FAQ answering exactly how many IPs AWS, Azure and GCP reserve per subnet, and why usable host counts differ between them
-- **Tool tabs** — a tab bar under the title switches between the Splitter and the [CIDR Calculator](#cidr-calculator); the current root block and cloud provider carry over to the other tool
+- **Tool tabs** — a tab bar under the title switches between the Splitter, the [CIDR Calculator](#cidr-calculator) and the [Overlap Checker](#cidr-overlap-checker); the current root block and cloud provider carry over to the other tools
 - **No dependencies** — pure HTML + CSS + vanilla JavaScript, single file, works offline
 
 ## Usage
@@ -60,16 +60,40 @@ A companion single-page tool (`calculator.html`), in the same visual style, for 
 - **Full results grid** — CIDR notation, network/broadcast address, subnet mask, wildcard mask, hex mask, total addresses, usable hosts, first/last host, IP range
 - **Cloud provider awareness** — same AWS/Azure/GCP reserved-IP logic as the splitter, with a live reserved-IP table and cloud-adjusted usable host count
 - **Copy CIDR** / **Share Link** buttons — copy the current CIDR, or copy a URL that restores the exact IP, prefix and provider
-- **Light & dark themes**, and the same tool tabs as the splitter — switching tabs opens the Splitter on the current block and provider
+- **Light & dark themes**, and the same tool tabs as the splitter — switching tabs opens the Splitter on the current block and provider, or the Overlap Checker with that block as its address space
 - **CIDR Calculator FAQ** — lookup-focused questions (wildcard masks, mask ↔ CIDR conversion, usable hosts in a /24, /31 and /32, cloud reserved IPs)
+
+## CIDR Overlap Checker
+
+A third page (`overlap.html`), in the same visual style, for checking many ranges against each other: VNets, VPCs, on-premises networks, VPN client pools, Kubernetes service and pod CIDRs. Paste them in, and it shows every overlap before a peering or VPN connection fails on it.
+
+![CIDR Overlap Checker screenshot](https://raw.githubusercontent.com/snarkbe/CIDRsplitter/master/images/overlap.png)
+
+- **Forgiving input** — one range per line, as `name 10.0.0.0/16`, `10.0.0.0/16 name`, or `name: 10.0.0.0/16, 10.1.0.0/16` for a network with several prefixes. A bare IP counts as a `/32`, `#` starts a comment, and lines without an IP (like CSV headers) are skipped, so a Splitter CSV export can be pasted as is. Results update as you type
+- **Overlap detection** — every overlapping pair is listed as *Identical* or *A contains B* (CIDR blocks can't partly overlap), with the number of shared addresses. A verdict banner sums it up
+- **Address map** — one bar per address space, with each range drawn in its own lane, overlaps striped in red and a used/free strip underneath. Large spaces zoom on the occupied part; click a range to jump to its row
+- **Address space** — leave it on *Auto* for one map per private range in use (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`), or set one explicitly (e.g. your `/8` allocation) to flag ranges that fall outside it
+- **Where does a new block fit?** — enter a prefix length to get the first free, correctly aligned blocks of that size, each with a one-click link to split it in the Splitter
+- **Free space as CIDRs** — the unused part of each address space, broken down into the fewest CIDR blocks, with **Copy Free Blocks** for the full list
+- **Flagged suggestions** — free blocks that a selected cloud refuses or advises against (e.g. `10.128.0.0/9` with GCP on) stay listed but carry a ⚠ tag naming the cloud; hover it for the reason
+- **Range types** — each range is labeled Private (RFC 1918), Shared/CGNAT (RFC 6598), Link-local, Loopback, Multicast, Documentation, Benchmarking, Reserved, Public or Mixed
+- **Cloud checks** — toggle AWS, Azure and GCP (any combination, for multi-cloud networks) to flag ranges each provider refuses or advises against. Arriving from the Splitter or Calculator with a provider selected narrows the checks to that provider
+  - **AWS** — can't use `0.0.0.0/8`, `127.0.0.0/8`, `169.254.0.0/16`, `224.0.0.0/4`; advises against `172.17.0.0/16` (AWS Cloud9, SageMaker AI) — [docs](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html)
+  - **Azure** — VNets can't use `224.0.0.0/4`, `255.255.255.255/32`, `127.0.0.0/8`, `169.254.0.0/16`, `168.63.129.16/32` — [docs](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq); AKS also rejects `192.0.2.0/24`, `172.30.0.0/16`, `172.31.0.0/16` — [docs](https://learn.microsoft.com/en-us/azure/aks/concepts-network-cni-overview)
+  - **GCP** — subnets can't use `0.0.0.0/8`, `127.0.0.0/8`, `169.254.0.0/16`, `224.0.0.0/4`, `255.255.255.255/32`, `199.36.153.4/30`, `199.36.153.8/30`; advises against `10.128.0.0/9` (auto mode subnets) and `172.17.0.0/16` (Docker bridge) — [docs](https://docs.cloud.google.com/vpc/docs/subnets)
+- **Host bits normalized** — `10.0.0.5/16` is treated as `10.0.0.0/16` and flagged, so a typo can't hide an overlap
+- **Row shortcuts** — open any range in the Splitter or the Calculator, or copy its CIDR
+- **Export** — CSV of the ranges and their status, or a Markdown report (ranges, overlaps, free space) ready for a wiki or a PR
+- **Share Link** — the ranges, address space and settings are encoded in the URL
+- **Overlap FAQ** — how CIDR blocks overlap, peering rules on AWS, Azure and GCP, ranges each cloud refuses, AKS service CIDR conflicts, private IPv4 ranges
 
 ## Discoverability
 
-Both pages carry per-page SEO metadata (title, description, Open Graph/Twitter cards), an inline SVG favicon, and `WebApplication` + `FAQPage` [JSON-LD](https://schema.org/) structured data — each page's `FAQPage` markup mirrors its own on-page FAQ (cloud reserved IPs on the splitter, lookup questions on the calculator), so the two pages don't compete with duplicate content. The two tools stay on separate URLs, each targeting its own search intent, and are linked through the tool tabs. `robots.txt` and `sitemap.xml` at the repo root list both pages for crawlers.
+All three pages carry per-page SEO metadata (title, description, Open Graph/Twitter cards), an inline SVG favicon, and `WebApplication` + `FAQPage` [JSON-LD](https://schema.org/) structured data — each page's `FAQPage` markup mirrors its own on-page FAQ (cloud reserved IPs on the splitter, lookup questions on the calculator, overlap and address planning questions on the overlap checker), so the pages don't compete with duplicate content. The tools stay on separate URLs, each targeting its own search intent, and are linked through the tool tabs. `robots.txt` and `sitemap.xml` at the repo root list all three pages for crawlers.
 
 ## Live Demo
 
-> [https://gh.reichert.be/CIDRsplitter/](https://gh.reichert.be/CIDRsplitter/) &nbsp;·&nbsp; [https://gh.reichert.be/CIDRsplitter/calculator.html](https://gh.reichert.be/CIDRsplitter/calculator.html)
+> [https://gh.reichert.be/CIDRsplitter/](https://gh.reichert.be/CIDRsplitter/) &nbsp;·&nbsp; [https://gh.reichert.be/CIDRsplitter/calculator.html](https://gh.reichert.be/CIDRsplitter/calculator.html) &nbsp;·&nbsp; [https://gh.reichert.be/CIDRsplitter/overlap.html](https://gh.reichert.be/CIDRsplitter/overlap.html)
 
 ## Inspiration
 
