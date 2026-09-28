@@ -575,6 +575,18 @@
     }
     .chip.found { border-color: rgba(72,207,173,0.5); color: var(--accent2); }
     .chip .icon-btn { height: 22px; min-width: 24px; border-radius: 999px; font-family: var(--font); }
+    .sub-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+    .sub-hint { font-size: 0.82rem; color: var(--text-muted); margin: 0.2rem 0 0.8rem; }
+    .sub-sep { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0 1.25rem; }
+    .chip.flagged { border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+    .chip .chip-flag {
+      font-family: var(--font);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--warn);
+      cursor: help;
+      white-space: nowrap;
+    }
     .free-group + .free-group { margin-top: 1rem; }
     .free-group .fg-title { font-size: 0.85rem; color: var(--text-muted); }
     .free-group .fg-title b { font-family: monospace; color: var(--text); }
@@ -800,15 +812,20 @@
 
 <div class="card" id="freeCard">
   <h3>Free Space</h3>
+  <h4 class="sub-title">Where does a new block fit?</h4>
+  <p class="sub-hint">The first free blocks of the size you pick, aligned on their boundary and ready to use.</p>
   <div class="finder-row">
     <div class="field">
-      <label for="findBits">Next free block</label>
+      <label for="findBits">Prefix length</label>
       <input type="number" id="findBits" value="24" min="0" max="32" />
     </div>
     <button class="btn btn-primary" onclick="renderFinder()">Find</button>
   </div>
   <div class="finder-results" id="finderResults"></div>
-  <div id="freeList" style="margin-top:1.25rem"></div>
+  <hr class="sub-sep" />
+  <h4 class="sub-title">All free space</h4>
+  <p class="sub-hint">Everything left unused in each address space, as the fewest CIDR blocks. Sizes vary.</p>
+  <div id="freeList"></div>
 </div>
 
 <div class="card faq-card">
@@ -983,7 +1000,7 @@ function cloudFindings(b, active) {
       const names = Object.keys(r.who).filter(c => active.includes(c)).map(c => r.who[c]);
       if (!names.length) return null;
       const verb = r.level === 'blocked' ? 'can\u2019t use' : (names.length > 1 ? 'advise against' : 'advises against');
-      return { level: r.level, text: `${names.join(', ')} ${verb} ${r.cidr} (${r.label})` };
+      return { level: r.level, names, text: `${names.join(', ')} ${verb} ${r.cidr} (${r.label})` };
     })
     .filter(Boolean);
 }
@@ -1290,9 +1307,15 @@ function findFree(bits) {
   return results;
 }
 
+// Free blocks that hit a cloud rule stay listed, with a flag naming the clouds
 function freeChip(b, found) {
   const cidr = cidrOf(b);
-  return `<span class="chip ${found ? 'found' : ''}">${cidr}
+  const findings = cloudFindings(b, activeClouds());
+  const clouds = [...new Set(findings.flatMap(f => f.names))].join(', ');
+  const flag = findings.length
+    ? `<span class="chip-flag" title="${esc(findings.map(f => f.text).join('\n'))}">&#9888; ${esc(clouds)}</span>`
+    : '';
+  return `<span class="chip ${found ? 'found' : ''} ${findings.length ? 'flagged' : ''}">${cidr}${flag}
     <a class="icon-btn" href="${toolUrl('splitter', b)}" title="Split ${cidr} in the Subnet Splitter">&#9986;</a>
     <button class="icon-btn" onclick="copyText('${cidr}', this)" title="Copy ${cidr}">&#x2398;</button></span>`;
 }
@@ -1304,12 +1327,13 @@ function renderFinder() {
   if (isNaN(bits) || bits < 0 || bits > 32) { out.innerHTML = '<p class="error-msg">Prefix length must be 0&ndash;32.</p>'; return; }
   const found = findFree(bits);
   out.innerHTML = found.length
-    ? `<div class="muted-note">First free /${bits} block${found.length > 1 ? 's' : ''}, in address order:</div><div class="chip-list">${found.map(b => freeChip(b, true)).join('')}</div>`
+    ? `<div class="muted-note">First free /${bits} block${found.length > 1 ? 's' : ''}, in address order${found.some(b => cloudFindings(b, activeClouds()).length) ? '. &#9888; marks a block a selected cloud refuses or advises against; hover it for details' : ''}:</div><div class="chip-list">${found.map(b => freeChip(b, true)).join('')}</div>`
     : `<div class="muted-note">No free /${bits} in ${state.spaces.length > 1 ? 'any address space' : cidrOf(state.spaces[0].space)}.${state.spaces.every(s => bits < s.space.bits) ? ' It\'s larger than the address space itself.' : ''}</div>`;
   updateBookmark();
 }
 
 function renderFreeList() {
+  const flagged = state.spaces.some(info => info.freeCidrs.some(b => cloudFindings(b, activeClouds()).length));
   document.getElementById('freeList').innerHTML = state.spaces.map(info => {
     const list = info.freeCidrs;
     const shown = list.slice(0, FREE_LIST_LIMIT);
@@ -1318,7 +1342,7 @@ function renderFreeList() {
       ${list.length ? `<div class="chip-list">${shown.map(b => freeChip(b, false)).join('')}</div>` : ''}
       ${list.length > shown.length ? `<div class="hint">&hellip;and ${list.length - shown.length} more. Copy Free Blocks gets them all.</div>` : ''}
     </div>`;
-  }).join('');
+  }).join('') + (flagged ? '<div class="hint">&#9888; marks a block a selected cloud refuses or advises against; hover it for details.</div>' : '');
 }
 
 // ── Orchestration ────────────────────────────────────────────────────────────

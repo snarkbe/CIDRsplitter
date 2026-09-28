@@ -73,8 +73,9 @@ A third page (`overlap.html`), in the same visual style, for checking many range
 - **Overlap detection** — every overlapping pair is listed as *Identical* or *A contains B* (CIDR blocks can't partly overlap), with the number of shared addresses. A verdict banner sums it up
 - **Address map** — one bar per address space, with each range drawn in its own lane, overlaps striped in red and a used/free strip underneath. Large spaces zoom on the occupied part; click a range to jump to its row
 - **Address space** — leave it on *Auto* for one map per private range in use (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`), or set one explicitly (e.g. your `/8` allocation) to flag ranges that fall outside it
-- **Next free block** — enter a prefix length to get the first free, correctly aligned blocks of that size, each with a one-click link to split it in the Splitter
+- **Where does a new block fit?** — enter a prefix length to get the first free, correctly aligned blocks of that size, each with a one-click link to split it in the Splitter
 - **Free space as CIDRs** — the unused part of each address space, broken down into the fewest CIDR blocks, with **Copy Free Blocks** for the full list
+- **Flagged suggestions** — free blocks that a selected cloud refuses or advises against (e.g. `10.128.0.0/9` with GCP on) stay listed but carry a ⚠ tag naming the cloud; hover it for the reason
 - **Range types** — each range is labeled Private (RFC 1918), Shared/CGNAT (RFC 6598), Link-local, Loopback, Multicast, Documentation, Benchmarking, Reserved, Public or Mixed
 - **Cloud checks** — toggle AWS, Azure and GCP (any combination, for multi-cloud networks) to flag ranges each provider refuses or advises against. Arriving from the Splitter or Calculator with a provider selected narrows the checks to that provider
   - **AWS** — can't use `0.0.0.0/8`, `127.0.0.0/8`, `169.254.0.0/16`, `224.0.0.0/4`; advises against `172.17.0.0/16` (AWS Cloud9, SageMaker AI) — [docs](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html)
