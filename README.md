@@ -28,7 +28,6 @@ Open `index.html` in any modern browser. There's no build step and no server. Or
 ## More
 
 - [Splitter](docs/splitter.md) · [Calculator](docs/calculator.md) · [Overlap Checker](docs/overlap-checker.md)
-- [Discoverability and SEO notes](docs/seo.md)
 - Inspired by [David Clayworth's Visual Subnet Calculator](https://www.davidc.net/sites/default/subnets/subnets.html) and [cidr.xyz](https://cidr.xyz/)
 
 ## License
