@@ -1923,13 +1923,21 @@ function exportMarkdown() {
   downloadFile(lines.join('\n') + '\n', 'subnets.md', 'text/markdown;charset=utf-8;');
 }
 
+// "Replace … before running" note, listing only placeholders still unfilled
+function placeholderNote(values, extra = '') {
+  const missing = values.filter(v => /^<.+>$/.test(v));
+  if (!missing.length) return [];
+  const list = missing.length > 1 ? `${missing.slice(0, -1).join(', ')}${missing.length > 2 ? ',' : ''} and ${missing.at(-1)}` : missing[0];
+  return [`# Replace ${list}${extra} before running.`];
+}
+
 function exportAzCLI() {
   const rg   = fieldVal('azureRG', '<resource-group>');
   const vnet = fieldVal('azureVnet', '<vnet-name>');
   const lines = [
     '#!/usr/bin/env bash',
     '# Azure CLI — create subnets',
-    '# Replace <resource-group> and <vnet-name> before running.',
+    ...placeholderNote([rg, vnet]),
     '',
     ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
@@ -1953,7 +1961,8 @@ function exportAWSCLI() {
   const lines = [
     '#!/usr/bin/env bash',
     '# AWS CLI — create subnets',
-    '# Replace <vpc-id> and optionally add --availability-zone before running.',
+    ...placeholderNote([vpcId], ' and optionally add --availability-zone'),
+    ...(/^<.+>$/.test(vpcId) ? [] : ['# Optionally add --availability-zone before running.']),
     '',
     ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
@@ -1977,7 +1986,7 @@ function exportGCPCLI() {
   const lines = [
     '#!/usr/bin/env bash',
     '# GCP CLI — create subnets',
-    '# Replace <project>, <network-name>, and <region> before running.',
+    ...placeholderNote([project, network, region]),
     '',
     ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
