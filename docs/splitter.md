@@ -51,7 +51,7 @@ Select AWS, Azure, GCP or None. The Usable Hosts column subtracts the addresses 
 | **Native IaC** | Bicep (Azure) or CloudFormation (AWS) |
 
 - **Selective export**: tick or untick each subnet (or the header "select all") to control exactly what appears in every export.
-- **Provider-specific fields**: once a cloud is selected, the optional details baked into exports are VPC ID (AWS), Resource Group and VNet (Azure), or Project, Network and Region (GCP).
+- **Provider-specific fields**: once a cloud is selected, the optional details baked into exports are VPC ID (AWS), Resource Group and VNet (Azure), or Project, Network and Region (GCP). A value that doesn't look like a valid ID is outlined in red, and every value is quoted or escaped in the exports, so a pasted or shared value can't add commands to a script.
 
 ## State, themes and navigation
 

@@ -1444,7 +1444,12 @@ const ENTRY_HEADERS = ['Name', 'CIDR', 'First IP', 'Last IP', 'Addresses', 'Type
 
 function exportCSV() {
   if (!state) return;
-  const cell = v => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  // Quote cells that need it, and prefix any a spreadsheet would run as a formula
+  const cell = v => {
+    let s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return /[,"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
   const lines = [ENTRY_HEADERS, ...entryRows()].map(r => r.map(cell).join(','));
   downloadFile(lines.join('\n') + '\n', 'cidr-overlaps.csv', 'text/csv;charset=utf-8;');
 }
@@ -1574,9 +1579,9 @@ function updateBookmark() {
 function loadFromUrl() {
   const params = new URLSearchParams(location.search);
   const p = params.get('p');
-  if (p && CLOUDS[p]) { carriedProvider = p; setActiveClouds([p]); }
+  if (p && Object.hasOwn(CLOUDS, p)) { carriedProvider = p; setActiveClouds([p]); }
   const c = params.get('c');
-  if (c) setActiveClouds(c.split(',').filter(x => CLOUDS[x]));
+  if (c) setActiveClouds(c.split(',').filter(x => Object.hasOwn(CLOUDS, x)));
 
   const r = params.get('r');
   if (r) {

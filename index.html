@@ -241,6 +241,7 @@
     .field input:focus, .field select:focus {
       border-color: var(--accent);
     }
+    .field input.invalid { border-color: var(--accent3); }
 
     .field input[type="number"] { width: 90px; }
     .field input[type="text"] { width: 175px; }
@@ -1125,9 +1126,47 @@ function displayName(s, i) {
   return n !== '' ? n : autoName(s, i);
 }
 
-// Same as displayName but sanitized to characters safe for cloud resource names
+// Same as displayName but sanitized to characters safe for cloud resource names.
+// A leading '-' would read as a CLI flag, so the name must start with a letter or digit.
 function cliName(s, i) {
-  return displayName(s, i).trim().replace(/[^A-Za-z0-9._-]+/g, '-');
+  const name = displayName(s, i).trim().replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[^A-Za-z0-9]+/, '');
+  return name !== '' ? name : autoName(s, i);
+}
+
+// Names also arrive through the URL, so drop control characters (newlines above
+// all): a name must never be able to start a new line in an exported script
+function cleanName(v) {
+  return String(v).replace(/[\p{Cc}\u2028\u2029]/gu, '');
+}
+
+// ── Export quoting ────────────────────────────────────────────────────────────
+
+// Bash word: plain tokens stay as is, anything else is single-quoted
+function shq(v) {
+  v = String(v);
+  return /^[\w.\/:@%+=,-]+$/.test(v) ? v : `'${v.replace(/'/g, `'\\''`)}'`;
+}
+
+// Double-quoted HCL string; ${ and %{ would otherwise start a template
+function hclStr(v) {
+  return '"' + String(v)
+    .replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')
+    .replace(/\$\{/g, () => '$${').replace(/%\{/g, () => '%%{') + '"';
+}
+
+// Single-quoted Bicep string; ${ would otherwise start an interpolation
+function bicepStr(v) {
+  return "'" + String(v)
+    .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')
+    .replace(/\$\{/g, () => '\\${') + "'";
+}
+
+// Double-quoted YAML scalar (JSON strings are valid YAML); also stops values
+// like "true" or "1e3" from being read as booleans or numbers
+function yamlStr(v) {
+  return JSON.stringify(String(v));
 }
 
 // ── Cloud providers ───────────────────────────────────────────────────────────
@@ -1286,7 +1325,7 @@ function applyNameSuggestion(idx, name) {
 function azureExportWarnings(idx, prefix) {
   return azureNameHints(idx)
     .filter(h => h.exportText)
-    .map(h => `${prefix} WARNING: ${h.exportText}`);
+    .map(h => `${prefix} WARNING: ${cleanName(h.exportText)}`);
 }
 
 function openAzureGuide() {
@@ -1400,7 +1439,7 @@ function joinSubnet(idx) {
 
 function updateName(idx, value) {
   if (!subnets[idx]) return;
-  subnets[idx].name = value;
+  subnets[idx].name = cleanName(value);
   refreshNameHints();
   updateBookmark();
 }
@@ -1609,7 +1648,7 @@ function decodeState(encoded) {
         network: ipToInt(ip),
         bits: parseInt(bits, 10),
         split: false,
-        name: name ? decodeURIComponent(name) : '',
+        name: name ? cleanName(decodeURIComponent(name)) : '',
         include: true,
       };
     }).filter(s => !isNaN(s.network) && !isNaN(s.bits));
@@ -1618,6 +1657,34 @@ function decodeState(encoded) {
 
 // Provider input fields persisted in the bookmark URL
 const PROVIDER_FIELD_IDS = ['azureRG', 'azureVnet', 'awsVpcId', 'gcpProject', 'gcpNetwork', 'gcpRegion'];
+
+// What each provider field should look like. A value that doesn't match is
+// flagged, not blocked; the exports quote every value either way.
+const PROVIDER_FIELD_RULES = {
+  awsVpcId:   { re: /^vpc-(?:[0-9a-f]{8}|[0-9a-f]{17})$/,
+                hint: 'a VPC ID: vpc- followed by 8 or 17 hex digits' },
+  azureRG:    { re: /^[\p{L}\p{N}_().-]{0,89}[\p{L}\p{N}_()-]$/u,
+                hint: 'a resource group name: up to 90 letters, digits, _ ( ) - or ., not ending in .' },
+  azureVnet:  { re: /^[A-Za-z0-9][\w.-]{0,62}\w$/,
+                hint: 'a VNet name: 2\u201364 letters, digits, _ . or -, starting with a letter or digit, ending with a letter, digit or _' },
+  gcpProject: { re: /^(?:[a-z0-9][a-z0-9.-]*[a-z0-9]:)?[a-z][a-z0-9-]{4,28}[a-z0-9]$/,
+                hint: 'a project ID: 6\u201330 lowercase letters, digits or -, starting with a letter' },
+  gcpNetwork: { re: /^(?:(?:https:\/\/www\.googleapis\.com\/compute\/v1\/)?projects\/[a-z0-9.:-]+\/global\/networks\/)?[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?$/,
+                hint: 'a network name: lowercase letters, digits or -, starting with a letter' },
+  gcpRegion:  { re: /^[a-z]+-[a-z]+[0-9]+$/,
+                hint: 'a region such as europe-west1' },
+};
+
+// Outline provider fields whose value doesn't look like what the cloud expects
+function checkProviderFields() {
+  PROVIDER_FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    const v = el.value.trim();
+    const bad = v !== '' && !PROVIDER_FIELD_RULES[id].re.test(v);
+    el.classList.toggle('invalid', bad);
+    el.title = bad ? `This doesn't look like ${PROVIDER_FIELD_RULES[id].hint}. Check it before running an export.` : '';
+  });
+}
 
 function updateBookmark() {
   const params = new URLSearchParams();
@@ -1633,6 +1700,7 @@ function updateBookmark() {
   if (excluded.length) params.set('x', excluded.join(','));
 
   // Provider field values that are filled in, base64 of "id=encodedValue;…"
+  checkProviderFields();
   const fieldPairs = PROVIDER_FIELD_IDS
     .map(id => {
       const el = document.getElementById(id);
@@ -1689,15 +1757,15 @@ function loadFromUrl() {
       atob(f).split(';').forEach(pair => {
         const eq = pair.indexOf('=');
         if (eq === -1) return;
-        const el = document.getElementById(pair.slice(0, eq));
-        if (el) el.value = decodeURIComponent(pair.slice(eq + 1));
+        const id = pair.slice(0, eq);
+        if (PROVIDER_FIELD_IDS.includes(id)) document.getElementById(id).value = decodeURIComponent(pair.slice(eq + 1));
       });
     } catch { /* ignore malformed field data */ }
   }
 
   // Restore provider last — setProvider syncs pills, field visibility and export buttons
   const p = params.get('p');
-  if (p && CLOUD_PROVIDERS[p]) setProvider(p);
+  if (p && Object.hasOwn(CLOUD_PROVIDERS, p)) setProvider(p);
 
   return true;
 }
@@ -1712,7 +1780,7 @@ function loadRootFromUrl(params) {
   document.getElementById('networkAddr').value = intToIp(net);
   document.getElementById('maskBits').value = bits;
   const p = params.get('p');
-  if (p && CLOUD_PROVIDERS[p]) setProvider(p);
+  if (p && Object.hasOwn(CLOUD_PROVIDERS, p)) setProvider(p);
   return true;
 }
 
@@ -1891,7 +1959,12 @@ function getTableData() {
 
 function exportCSV() {
   const { headers, rows } = getTableData();
-  const esc = v => { const s = String(v); return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  // Quote cells that need it, and prefix any a spreadsheet would run as a formula
+  const esc = v => {
+    let s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return /[,"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
   const lines = [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))];
   downloadFile(lines.join('\r\n'), 'subnets.csv', 'text/csv;charset=utf-8;');
 }
@@ -1945,9 +2018,9 @@ function exportAzCLI() {
       return [
         ...azureExportWarnings(i, '#'),
         `az network vnet subnet create \\`,
-        `  --resource-group ${rg} \\`,
-        `  --vnet-name ${vnet} \\`,
-        `  --name ${name} \\`,
+        `  --resource-group ${shq(rg)} \\`,
+        `  --vnet-name ${shq(vnet)} \\`,
+        `  --name ${shq(name)} \\`,
         `  --address-prefixes ${cidr}`,
         '',
       ].join('\n');
@@ -1969,7 +2042,7 @@ function exportAWSCLI() {
       const name = cliName(s, i);
       return [
         `aws ec2 create-subnet \\`,
-        `  --vpc-id ${vpcId} \\`,
+        `  --vpc-id ${shq(vpcId)} \\`,
         `  --cidr-block ${cidr} \\`,
         `  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=${name}}]'`,
         '',
@@ -1992,10 +2065,10 @@ function exportGCPCLI() {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
       const name = cliName(s, i);
       return [
-        `gcloud compute networks subnets create ${name} \\`,
-        `  --project=${project} \\`,
-        `  --network=${network} \\`,
-        `  --region=${region} \\`,
+        `gcloud compute networks subnets create ${shq(name)} \\`,
+        `  --project=${shq(project)} \\`,
+        `  --network=${shq(network)} \\`,
+        `  --region=${shq(region)} \\`,
         `  --range=${cidr}`,
         '',
       ].join('\n');
@@ -2034,9 +2107,9 @@ function exportTfAzure() {
       return [
         ...azureExportWarnings(i, '#'),
         `resource "azurerm_subnet" "${tfLabel(s, i)}" {`,
-        `  name                 = "${cliName(s, i)}"`,
-        `  resource_group_name  = "${rg}"`,
-        `  virtual_network_name = "${vnet}"`,
+        `  name                 = ${hclStr(cliName(s, i))}`,
+        `  resource_group_name  = ${hclStr(rg)}`,
+        `  virtual_network_name = ${hclStr(vnet)}`,
         `  address_prefixes     = ["${cidr}"]`,
         `}`,
         '',
@@ -2056,10 +2129,10 @@ function exportTfAws() {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
       return [
         `resource "aws_subnet" "${tfLabel(s, i)}" {`,
-        `  vpc_id     = "${vpcId}"`,
+        `  vpc_id     = ${hclStr(vpcId)}`,
         `  cidr_block = "${cidr}"`,
         `  tags = {`,
-        `    Name = "${cliName(s, i)}"`,
+        `    Name = ${hclStr(cliName(s, i))}`,
         `  }`,
         `}`,
         '',
@@ -2081,10 +2154,10 @@ function exportTfGcp() {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
       return [
         `resource "google_compute_subnetwork" "${tfLabel(s, i)}" {`,
-        `  name          = "${cliName(s, i)}"`,
-        `  project       = "${project}"`,
-        `  network       = "${network}"`,
-        `  region        = "${region}"`,
+        `  name          = ${hclStr(cliName(s, i))}`,
+        `  project       = ${hclStr(project)}`,
+        `  network       = ${hclStr(network)}`,
+        `  region        = ${hclStr(region)}`,
         `  ip_cidr_range = "${cidr}"`,
         `}`,
         '',
@@ -2106,7 +2179,7 @@ function exportBicep() {
     '// Bicep — Azure subnets (Microsoft.Network/virtualNetworks/subnets)',
     '// Deploy at the resource group scope that holds the VNet.',
     '',
-    `param vnetName string = '${vnet}'`,
+    `param vnetName string = ${bicepStr(vnet)}`,
     '',
     ...exportSubnets().map(({ s, i }) => {
       const cidr = `${intToIp(s.network)}/${s.bits}`;
@@ -2139,11 +2212,11 @@ function exportCloudFormation() {
         `  ${logicalId || 'Subnet' + (i + 1)}:`,
         `    Type: AWS::EC2::Subnet`,
         `    Properties:`,
-        `      VpcId: ${vpcId}`,
+        `      VpcId: ${yamlStr(vpcId)}`,
         `      CidrBlock: ${cidr}`,
         `      Tags:`,
         `        - Key: Name`,
-        `          Value: ${cliName(s, i)}`,
+        `          Value: ${yamlStr(cliName(s, i))}`,
       ].join('\n');
     })
   ];

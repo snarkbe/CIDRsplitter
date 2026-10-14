@@ -1075,7 +1075,7 @@ function loadFromUrl() {
   ipInt = ip;
   prefixBits = bits;
   const p = params.get('p');
-  if (p && CLOUD_PROVIDERS[p]) {
+  if (p && Object.hasOwn(CLOUD_PROVIDERS, p)) {
     selectedCloud = p;
     document.querySelectorAll('.pill[data-provider]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.provider === p);
